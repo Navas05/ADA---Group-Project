@@ -2,7 +2,8 @@
 
 Analysis and Design of Applications Group Project: **TurbineH**
 
-## Group Members:
+## Members of Muévete:
+
 - Álvaro Navas Martínez
 - Javier Pérez Rubio
 - Juan Miguel Reyes Pérez

@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+
+' Global settings
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' Use Case styling
+skinparam usecase {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+' Actor styling
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+' Note styling
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+' Arrow styling
+skinparam arrow {
+    Color #2B3E6A
+}
+
+'=== Actors ===
+' Define your actors here (e.g., actor "Customer" as cust)
+
+
+'=== System Boundary ===
+rectangle "System Name" {
+
+    '=== Use Cases ===
+    ' Define your use cases here (e.g., usecase "Login" as UC1)
+
+}
+
+'=== Relationships ===
+' Connect actors to use cases or use cases to each other here
+
+@enduml
