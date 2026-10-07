@@ -6,17 +6,25 @@
 
 > Answering the "What for?" or "Why?" of the business (commercial, financial, or strategic goals).
 
-- BR-01: ...
-- BR-02: ...
-- BR-03: ...
+- BR-01: Facilitate invoice tracking and charges of the company's clients.
+
+- BR-02: Improve efficiency of the financial team.
 
 ## User Requirements
 
 > Answering "What does the user want to achieve?" (Customer or actor goals).
 
-- UR-01: ...
-- UR-02: ...
-- UR-03: ...
+- UR-01: The employee can create invoices.
+
+- UR-02: The employee can modify/cancel invoices.
+
+- UR-03: The employee can unsubscribe clients.
+
+- UR-04: The employee can access financial statistics.
+
+- UR-05: The administrator can regulate employee access.
+
+- UR-06: The employee can manage client notifications.
 
 ## System Requirements
 
@@ -26,8 +34,17 @@
 
 > Answering "What the system does to fulfill user requirements?" or "How does the software react?" (Inputs, outputs, calculations, and technical behavior to fulfill UR-01).
 
-- FR-01: ...
+- FR-01: The system must register users with a company email and login password.
+
+- FR-02: The system must verify and authorize user operations according to their role.
+
+- FR-03: The system must send automated notifications to clients.
+
+- FR-04: The system must generate invoices based on user specification.
+
+- FR-01: The system must automatically create client reports.
   - Dependencies / Relationships: ...
+
 - FR-02: ...
   - Dependencies / Relationships: ...
 - FR-03: ...
