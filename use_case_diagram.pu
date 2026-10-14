@@ -52,31 +52,33 @@ rectangle "Invoices Management App Environment" {
 
     usecase "Modify Employee Access" as AC1
 
-    usecase "Access Modifications History" as SC1
+    usecase "Access Modification's History" as SC1
 
     usecase "Send Notification" as NC1
     
     usecase "Authorise Employee's Operations" as AuC1
+
+    usecase "Manage Pending Tasks" as PT1
 }
 
 '=== Relationships ===
 ' Connect actors to use cases or use cases to each other here
-employee --> UC1
-employee --> UC2
-employee --> UC3
-employee --> UC4
-employee --> UC5
-employee --> UC6
+employee -- PT1
+employee -- UC4
+employee -- UC5
+employee -- UC6
 
-admin --> AC1
+admin -- AC1
 
-super --> SC1
+super -- SC1
 
-notification --> NC1
+notification -- NC1
 
-UC1 ..> AuC1 : <<include>>
-UC2 ..> AuC1 : <<include>>
-UC3 ..> AuC1 : <<include>>
+PT1 <.. UC1 : <<extend>>
+PT1 <.. UC2 : <<extend>>
+PT1 <.. UC3 : <<extend>>
+
+PT1 ..> AuC1 : <<include>>
 UC4 ..> AuC1 : <<include>>
 UC5 ..> AuC1 : <<include>>
 UC6 ..> AuC1 : <<include>>
