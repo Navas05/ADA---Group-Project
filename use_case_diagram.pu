@@ -49,6 +49,7 @@ rectangle "Invoices Management App Environment" {
     usecase "Unsubscribe Clients" as UC4
     usecase "Access Financial Statistics" as UC5
     usecase "Manage Client Notifications" as UC6
+    usecase "Check Unpaid Bills" as UC7
 
     usecase "Modify Employee Access" as AC1
 
@@ -58,13 +59,12 @@ rectangle "Invoices Management App Environment" {
     
     usecase "Authorise Employee's Operations" as AuC1
 
-    usecase "Manage Pending Tasks" as PT1
+    usecase "Manage Tasks" as PT1
 }
 
 '=== Relationships ===
 ' Connect actors to use cases or use cases to each other here
 employee -- PT1
-employee -- UC4
 employee -- UC5
 employee -- UC6
 
@@ -77,9 +77,10 @@ notification -- NC1
 PT1 <.. UC1 : <<extend>>
 PT1 <.. UC2 : <<extend>>
 PT1 <.. UC3 : <<extend>>
+PT1 <.. UC4 : <<extend>>
+PT1 <.. UC7 : <<extend>>
 
 PT1 ..> AuC1 : <<include>>
-UC4 ..> AuC1 : <<include>>
 UC5 ..> AuC1 : <<include>>
 UC6 ..> AuC1 : <<include>>
 AC1 ..> AuC1 : <<include>>
@@ -89,6 +90,7 @@ UC1 ..> NC1 : <<include>>
 UC2 ..> NC1 : <<include>>
 UC3 ..> NC1 : <<include>>
 UC4 ..> NC1 : <<include>>
+UC7 ..> NC1 : <<include>>
 
 employee <|-- admin
 admin <|-- super
