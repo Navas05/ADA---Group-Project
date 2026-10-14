@@ -34,17 +34,42 @@ skinparam arrow {
 '=== Actors ===
 ' Define your actors here (e.g., actor "Customer" as cust)
 actor "User" as user
+actor "Administrator" as admin
+actor "Super Administrator" as super
+actor "External Notification System" as notification
 
 '=== System Boundary ===
-rectangle "System Name" {
+rectangle "Invoices Administration App Environment" {
 
     '=== Use Cases ===
     ' Define your use cases here (e.g., usecase "Login" as UC1)
-    usecase "Yes yes boof" as UC1
+    usecase "Create Invoice" as UC1
+    usecase "Modify Invoice" as UC2
+    usecase "Cancel Invoice" as UC3
+    usecase "Unsubscribe Clients" as UC4
+    usecase "Access Financial Statistics" as UC5
+    usecase "Manage Client Notifications" as UC6
+    usecase "Modify Employee Acess" as AC1
+    usecase "Send Notification" as NC1
 }
 
 '=== Relationships ===
 ' Connect actors to use cases or use cases to each other here
 user --> UC1
+user --> UC2
+user --> UC3
+user --> UC4
+user --> UC5
+user --> UC6
+
+admin --> AC1
+
+UC1 ..> NC1 : <<include>>
+UC2 ..> NC1 : <<include>>
+UC3 ..> NC1 : <<include>>
+UC4 ..> NC1 : <<include>>
+
+user <|-- admin
+admin <|-- super
 
 @enduml
