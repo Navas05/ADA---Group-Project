@@ -33,13 +33,13 @@ skinparam arrow {
 
 '=== Actors ===
 ' Define your actors here (e.g., actor "Customer" as cust)
-actor "User" as user
+actor "Employee" as employee
 actor "Administrator" as admin
 actor "Super Administrator" as super
 actor "External Notification System" as notification
 
 '=== System Boundary ===
-rectangle "Invoices Administration App Environment" {
+rectangle "Invoices Management App Environment" {
 
     '=== Use Cases ===
     ' Define your use cases here (e.g., usecase "Login" as UC1)
@@ -49,27 +49,46 @@ rectangle "Invoices Administration App Environment" {
     usecase "Unsubscribe Clients" as UC4
     usecase "Access Financial Statistics" as UC5
     usecase "Manage Client Notifications" as UC6
-    usecase "Modify Employee Acess" as AC1
+
+    usecase "Modify Employee Access" as AC1
+
+    usecase "Access Modifications History" as SC1
+
     usecase "Send Notification" as NC1
+    
+    usecase "Authorise Employee's Operations" as AuC1
 }
 
 '=== Relationships ===
 ' Connect actors to use cases or use cases to each other here
-user --> UC1
-user --> UC2
-user --> UC3
-user --> UC4
-user --> UC5
-user --> UC6
+employee --> UC1
+employee --> UC2
+employee --> UC3
+employee --> UC4
+employee --> UC5
+employee --> UC6
 
 admin --> AC1
+
+super --> SC1
+
+notification --> NC1
+
+UC1 ..> AuC1 : <<include>>
+UC2 ..> AuC1 : <<include>>
+UC3 ..> AuC1 : <<include>>
+UC4 ..> AuC1 : <<include>>
+UC5 ..> AuC1 : <<include>>
+UC6 ..> AuC1 : <<include>>
+AC1 ..> AuC1 : <<include>>
+SC1 ..> AuC1 : <<include>>
 
 UC1 ..> NC1 : <<include>>
 UC2 ..> NC1 : <<include>>
 UC3 ..> NC1 : <<include>>
 UC4 ..> NC1 : <<include>>
 
-user <|-- admin
+employee <|-- admin
 admin <|-- super
 
 @enduml
