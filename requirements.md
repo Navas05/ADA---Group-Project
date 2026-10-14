@@ -14,10 +14,6 @@
 
 > Answering "What does the user want to achieve?" (Customer or actor goals).
 
-- UR-01: The employee can create invoices.
-
-- UR-02: The employee can modify/cancel invoices.
-
 - UR-03: The employee can unsubscribe clients.
 
 - UR-04: The employee can access financial statistics.
@@ -27,6 +23,10 @@
 - UR-06: The employee can manage client notifications.
 
 - UR-07: The superadmin can access a history of modifications.
+
+- UR-08: The employee can manage the most important pending tasks.
+
+- UR-09: The employee can select an important pending task to manage it.
 
 ## System Requirements
 
@@ -54,6 +54,10 @@
 - FR-08: The system must check whether there are pending invoices and cancel future ones.
 
 - FR-09: The system must give the superadmin access to a complete history of modifications.
+
+- FR-10: The system must be able to create invoices.
+
+- UR-02: The system must be able to modify/cancel invoices.
 
 
 ### Non-Functional Requirements
