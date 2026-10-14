@@ -51,6 +51,8 @@
 
 - FR-08: The system must check whether there are pending invoices and cancel future ones.
 
+- FR-09: The system must give the superadmin access to a complete history of modifications.
+
 
 ### Non-Functional Requirements
 
@@ -62,6 +64,11 @@
   - Metric / Acceptance criterion: I don't know.
   - Verification method: A bot crawls all the links in the app to see whether the link tree has depth 
     less than or equal to the metric.
+
+- NFR-02: The app must be compatible on a wide range of devices.
+  - Description: The app must be able to run on Android, iOS, iPadOS, Windows, macOS and Linux.
+  - Dependecies: None.
+  - Metric / Acceptance criterion: If the app 
 
 
 - NFR-nigga: ...
