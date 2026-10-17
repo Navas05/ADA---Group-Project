@@ -11,9 +11,9 @@
 
 > Answering the "What for?" or "Why?" of the business (commercial, financial, or strategic goals).
 
-- BR-01: Facilitate invoice tracking and charges of the company's clients.
+- **BR-01:** Facilitate invoice tracking and charges of the company's clients.
 
-- BR-02: Improve efficiency of the financial team, minimizing manual intervention and clicks.
+- **BR-02:** Improve efficiency of the financial team, minimizing manual intervention and clicks.
 
 ## User Requirements
 
@@ -21,35 +21,35 @@
 
 ### Employee
 
-- UR-01: The employee must be able to access a daily work inbox with upcoming invoices and notifications.
+- **UR-01:** The employee must be able to access a daily work inbox with upcoming invoices and notifications.
 
-- UR-02: The employee must be able to register and update their assigned clients.
+- **UR-02:** The employee must be able to register and update their assigned clients.
 
-- UR-03: The employee must be able to modify/cancel their assigned clients' subscriptions.
+- **UR-03:** The employee must be able to modify/cancel their assigned clients' subscriptions.
 
-- UR-04: The employee must be able to create and issue one-off invoices.
+- **UR-04:** The employee must be able to create and issue one-off invoices.
 
-- UR-05: The employee must be able to track payment statuses of their assigned clients.
+- **UR-05:** The employee must be able to track payment statuses of their assigned clients.
 
-- UR-06: The employee must be able to resend and reschedule their assigned clients' message deliveries.
+- **UR-06:** The employee must be able to resend and reschedule their assigned clients' message deliveries.
 
 ### Administrator
 
-- UR-07: The administrator must be able to view all clients and invoices globally.
+- **UR-07:** The administrator must be able to view all clients and invoices globally.
 
-- UR-08: The administrator must be able to (un)assign clients to employees.
+- **UR-08:** The administrator must be able to (un)assign clients to employees.
 
-- UR-09: The administrator must be able to import client records in bulk via CSV.
+- **UR-09:** The administrator must be able to import client records in bulk via CSV.
 
-- UR-10: The administrator must be able to consult the financial dashboard (weekly, monthly, quarterly, and annual) and export this data.
+- **UR-10:** The administrator must be able to consult the financial dashboard (weekly, monthly, quarterly, and annual) and export this data.
 
 ### Superadministrator
 
-- UR-11: The superadministrator must be able to configure global system parameters (must include: default payment terms, monthly payment dates)
+- **UR-11:** The superadministrator must be able to configure global system parameters (must include: default payment terms, monthly payment dates)
 
-- UR-12: The superadministrator must be able to assign roles (employee / administrator) to users.
+- **UR-12:** The superadministrator must be able to assign roles (employee / administrator) to users.
 
-- UR-13: The superadministrator must be able to access a system log of modifications.
+- **UR-13:** The superadministrator must be able to access a system log of modifications.
 
 ## System Requirements
 
@@ -59,29 +59,35 @@
 
 > Answering "What the system does to fulfill user requirements?" or "How does the software react?" (Inputs, outputs, calculations, and technical behavior to fulfill UR-01).
 
+- **FR-01:** The system must authenticate employees via company email (with domain `@turbineh.com`) and password.
 
-- FR-01: The system must generate invoices based on user specification.
+- **FR-02:** The system must enforce permsissions across three roles (`Employee`, `Administrator`, `Superadministrator`).
 
-- FR-02: The system must modify and cancel invoices based on user specification.
+- **FR-03:** The system must record an uneditable audit log of all sensitive operations.
 
-- FR-03: The system must assign a "cancellation status" on newly unsubscribed clients.
+- **FR-04:** The system must store client company records.
 
-- FR-04: The system must register users with a company email and login password.
+- **FR-05:** The system must allow importing clients via CSV.
 
-- FR-05: The system must verify and authorize user operations according to their role.
+- **FR-06:** The system must generate monthly invoices on a configurable day.
 
-- FR-06: The system must send automated notifications to clients.
+- **FR-07:** The system must allow pausing and cancelling active subscriptions, suspending new monthly invoice generation, while keeping existing unpaid invoices in the active collection flow until settled.
 
-- FR-07: The system must store all information regarding clients.
+- **FR-08:** The system must support an annual review campaign to check client revenue against rate tiers, and propose price adjustments.
 
-- FR-08: The system must check whether there are pending invoices and cancel future ones.
+- **FR-09:** The system must support creating and issuing one-off invoices.
 
-- FR-09: The system must give the superadmin access to a complete history of modifications.
+- **FR-10:** The system must update invoice status.
 
-- FR-10: The system must be able to create invoices.
+- **FR-11:** The system must generate corporate-branded PDF documents upon issuance.
 
-- UR-02: The system must be able to modify/cancel invoices.
+- **FR-12:** The system must send issued invoices and reminders via email and Whatsapp, if consented, and log delivery statuses.
 
+- **FR-13:** The system must allow reminder schedule configuration.
+
+- **FR-14:** The system must integrate with payment sources and update its corresponding invoice status.
+
+- **FR-15:** The system must provide an operational task inbox for all employees.
 
 ### Non-Functional Requirements
 
