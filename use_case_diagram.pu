@@ -1,6 +1,5 @@
 @startuml use_case_diagram
 left to right direction
-skinparam packageStyle rectangle
 
 actor "Employee" as Emp
 actor "Administrator" as Admin
@@ -13,57 +12,49 @@ Emp <|-- Admin
 Admin <|-- SuperAdmin
 
 rectangle "TurbineH Invoicing & Subscription System" {
-    usecase "UC-01: Authenticate via @turbineh.com" as UC01
-    usecase "UC-02: Access Daily Work Inbox" as UC02
-    usecase "UC-03: Register & Update Assigned Clients" as UC03
-    usecase "UC-04: Modify / Pause / Cancel Subscriptions" as UC04
-    usecase "UC-05: Create & Issue One-Off Invoices" as UC05
-    usecase "UC-06: Track Assigned Client Payment Statuses" as UC06
-    usecase "UC-07: Resend & Reschedule Message Deliveries" as UC07
-    usecase "UC-08: View All Clients & Invoices Globally" as UC08
-    usecase "UC-09: Assign / Unassign Clients to Employees" as UC09
-    usecase "UC-10: Import Clients in Bulk via CSV" as UC10
-    usecase "UC-11: Consult & Export Financial Dashboard" as UC11
-    usecase "UC-12: Run Annual Revenue & Rate Tier Review" as UC12
-    usecase "UC-13: Configure Global System Parameters\n(Payment Terms, Monthly Dates, Reminders)" as UC13
-    usecase "UC-14: Assign User Roles" as UC14
-    usecase "UC-15: Access System Modification Log" as UC15
-    usecase "UC-16: Generate Monthly Subscription Invoices" as UC16
-    usecase "UC-17: Generate Corporate-Branded PDF" as UC17
-    usecase "UC-18: Send Invoices & Reminders" as UC18
-    usecase "UC-19: Sync & Update Invoice Payment Status" as UC19
-    usecase "UC-20: Record Uneditable Audit Log" as UC20
+    usecase "UC-01: Access Daily Work Inbox" as UC02
+    usecase "UC-02: Modify / Pause / Cancel Subscriptions" as UC04
+    usecase "UC-03: Create or Issue One-Off Invoices" as UC05
+    usecase "UC-04: Track Assigned Client Payment Statuses" as UC06
+    usecase "UC-05: Manage Message Deliveries" as UC07
+    usecase "UC-06: View All Clients & Invoices Globally" as UC08
+    usecase "UC-07: Assign / Unassign Clients to Employees" as UC09
+    usecase "UC-08: Import Clients in Bulk via CSV" as UC10
+    usecase "UC-09: Consult Financial Dashboard" as UC11
+    usecase "UC-10: Export Financial Dashboard" as UC12
+    usecase "UC-11: Configure Global System Parameters\n(Payment Terms, Monthly Dates, Reminders)" as UC13
+    usecase "UC-12: Assign User Roles" as UC14
+    usecase "UC-13: Access System Modification Log" as UC15
+    usecase "UC-14: Generate Corporate-Branded PDF" as UC17
+    usecase "UC-15: Send Invoices & Reminders" as UC18
+    usecase "UC-16: Sync & Update Invoice Payment Status" as UC19
+    usecase "UC-17: Record Uneditable Audit Log" as UC20
+    usecase "UC-18: Authenticate & check user permissions" as UC21
+    
+    note right of UC21 : This is included in all usecases.
 }
 
-' Employee associations
-Emp -- UC01
 Emp -- UC02
-Emp -- UC03
 Emp -- UC04
 Emp -- UC05
 Emp -- UC06
 Emp -- UC07
 
-' Administrator associations
 Admin -- UC08
 Admin -- UC09
 Admin -- UC10
 Admin -- UC11
-Admin -- UC12
 
-' Superadministrator associations
 SuperAdmin -- UC13
 SuperAdmin -- UC14
 SuperAdmin -- UC15
 
-' Includes & Extends relationships
 UC05 ..> UC17 : <<include>>
 UC05 ..> UC18 : <<include>>
-UC16 ..> UC17 : <<include>>
-UC16 ..> UC18 : <<include>>
-UC07 ..> UC18 : <<include>>
+UC07 <.. UC18 : <<extend>>
 
-UC03 ..> UC20 : <<include>>
+UC11 <.. UC12 : <<extend>>
+
 UC04 ..> UC20 : <<include>>
 UC05 ..> UC20 : <<include>>
 UC09 ..> UC20 : <<include>>
@@ -71,7 +62,6 @@ UC10 ..> UC20 : <<include>>
 UC13 ..> UC20 : <<include>>
 UC14 ..> UC20 : <<include>>
 
-' External System integrations
 UC18 --> MsgSys
 UC19 <-- PaymentSys
 UC06 ..> UC19 : <<include>>
