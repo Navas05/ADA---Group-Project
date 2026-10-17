@@ -2,6 +2,11 @@
 
 > High-level specification outlining business goals, user needs, and technical behavior for TurbineH's internal invoicing, subscription, and payment tracking application.
 
+## Definitions
+
+- **Subscription/recurrent invoice**: A monthly payment given to clients using the Brain subcription.
+- **One-off invoice**: A one-time payment to be fulfilled at a certain date.
+
 ## Business Requirements
 
 > Answering the "What for?" or "Why?" of the business (commercial, financial, or strategic goals).
@@ -14,19 +19,37 @@
 
 > Answering "What does the user want to achieve?" (Customer or actor goals).
 
-- UR-03: The employee can unsubscribe clients.
+### Employee
 
-- UR-04: The employee can access financial statistics.
+- UR-01: The employee must be able to access a daily work inbox with upcoming invoices and notifications.
 
-- UR-05: The administrator can regulate employee access.
+- UR-02: The employee must be able to register and update their assigned clients.
 
-- UR-06: The employee can manage client notifications.
+- UR-03: The employee must be able to modify/cancel their assigned clients' subscriptions.
 
-- UR-07: The superadmin can access a history of modifications.
+- UR-04: The employee must be able to create and issue one-off invoices.
 
-- UR-08: The employee can manage the most important pending tasks.
+- UR-05: The employee must be able to track payment statuses of their assigned clients.
 
-- UR-09: The employee can select an important pending task to manage it.
+- UR-06: The employee must be able to resend and reschedule their assigned clients' message deliveries.
+
+### Administrator
+
+- UR-07: The administrator must be able to view all clients and invoices globally.
+
+- UR-08: The administrator must be able to (un)assign clients to employees.
+
+- UR-09: The administrator must be able to import client records in bulk via CSV.
+
+- UR-10: The administrator must be able to consult the financial dashboard (weekly, monthly, quarterly, and annual) and export this data.
+
+### Superadministrator
+
+- UR-11: The superadministrator must be able to configure global system parameters (must include: default payment terms, monthly payment dates)
+
+- UR-12: The superadministrator must be able to assign roles (employee / administrator) to users.
+
+- UR-13: The superadministrator must be able to access a system log of modifications.
 
 ## System Requirements
 
