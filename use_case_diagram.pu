@@ -1,98 +1,69 @@
-@startuml
+@startuml use_case_diagram
 left to right direction
 
-' Global settings
-skinparam shadowing false
-skinparam packageStyle rectangle
+actor "Employee" as Emp
+actor "Administrator" as Admin
+actor "Superadministrator" as SuperAdmin
 
-' Use Case styling
-skinparam usecase {
-    BackgroundColor #FFFFFF
-    BorderColor #2B3E6A
-    FontColor #000000
-}
+actor "External Payment Service" as PaymentSys
+actor "External Messaging Services" as MsgSys
 
-' Actor styling
-skinparam actor {
-    BackgroundColor #FFFFFF
-    BorderColor #2B3E6A
-    FontColor #000000
-}
+Emp <|-- Admin
+Admin <|-- SuperAdmin
 
-' Note styling
-skinparam note {
-    BackgroundColor #FDE2B8
-    BorderColor #2B3E6A
-    FontColor #000000
-}
-
-' Arrow styling
-skinparam arrow {
-    Color #2B3E6A
-}
-
-'=== Actors ===
-' Define your actors here (e.g., actor "Customer" as cust)
-actor "Employee" as employee
-actor "Administrator" as admin
-actor "Super Administrator" as super
-actor "External Notification System" as notification
-
-'=== System Boundary ===
-rectangle "Invoices Management App Environment" {
-
-    '=== Use Cases ===
-    ' Define your use cases here (e.g., usecase "Login" as UC1)
-    usecase "Create Invoice" as UC1
-    usecase "Modify Invoice" as UC2
-    usecase "Cancel Invoice" as UC3
-    usecase "Unsubscribe Clients" as UC4
-    usecase "Access Financial Statistics" as UC5
-    usecase "Manage Client Notifications" as UC6
-    usecase "Check Unpaid Bills" as UC7
-
-    usecase "Modify Employee Access" as AC1
-
-    usecase "Access Modification's History" as SC1
-
-    usecase "Send Notification" as NC1
+rectangle "TurbineH Invoicing & Subscription System" {
+    usecase "UC-01: Access Daily Work Inbox" as UC02
+    usecase "UC-02: Modify / Pause / Cancel Subscriptions" as UC04
+    usecase "UC-03: Create or Issue One-Off Invoices" as UC05
+    usecase "UC-04: Track Assigned Client Payment Statuses" as UC06
+    usecase "UC-05: Manage Message Deliveries" as UC07
+    usecase "UC-06: View All Clients & Invoices Globally" as UC08
+    usecase "UC-07: Assign / Unassign Clients to Employees" as UC09
+    usecase "UC-08: Import Clients in Bulk via CSV" as UC10
+    usecase "UC-09: Consult Financial Dashboard" as UC11
+    usecase "UC-10: Export Financial Dashboard" as UC12
+    usecase "UC-11: Configure Global System Parameters\n(Payment Terms, Monthly Dates, Reminders)" as UC13
+    usecase "UC-12: Assign User Roles" as UC14
+    usecase "UC-13: Access System Modification Log" as UC15
+    usecase "UC-14: Generate Corporate-Branded PDF" as UC17
+    usecase "UC-15: Send Invoices & Reminders" as UC18
+    usecase "UC-16: Sync & Update Invoice Payment Status" as UC19
+    usecase "UC-17: Record Uneditable Audit Log" as UC20
+    usecase "UC-18: Authenticate & check user permissions" as UC21
     
-    usecase "Authorise Employee's Operations" as AuC1
-
-    usecase "Manage Tasks" as PT1
+    note right of UC21 : This is included in all usecases.
 }
 
-'=== Relationships ===
-' Connect actors to use cases or use cases to each other here
-employee -- PT1
-employee -- UC5
-employee -- UC6
+Emp -- UC02
+Emp -- UC04
+Emp -- UC05
+Emp -- UC06
+Emp -- UC07
 
-admin -- AC1
+Admin -- UC08
+Admin -- UC09
+Admin -- UC10
+Admin -- UC11
 
-super -- SC1
+SuperAdmin -- UC13
+SuperAdmin -- UC14
+SuperAdmin -- UC15
 
-notification -- NC1
+UC05 ..> UC17 : <<include>>
+UC05 ..> UC18 : <<include>>
+UC07 <.. UC18 : <<extend>>
 
-PT1 <.. UC1 : <<extend>>
-PT1 <.. UC2 : <<extend>>
-PT1 <.. UC3 : <<extend>>
-PT1 <.. UC4 : <<extend>>
-PT1 <.. UC7 : <<extend>>
+UC11 <.. UC12 : <<extend>>
 
-PT1 ..> AuC1 : <<include>>
-UC5 ..> AuC1 : <<include>>
-UC6 ..> AuC1 : <<include>>
-AC1 ..> AuC1 : <<include>>
-SC1 ..> AuC1 : <<include>>
+UC04 ..> UC20 : <<include>>
+UC05 ..> UC20 : <<include>>
+UC09 ..> UC20 : <<include>>
+UC10 ..> UC20 : <<include>>
+UC13 ..> UC20 : <<include>>
+UC14 ..> UC20 : <<include>>
 
-UC1 ..> NC1 : <<include>>
-UC2 ..> NC1 : <<include>>
-UC3 ..> NC1 : <<include>>
-UC4 ..> NC1 : <<include>>
-UC7 ..> NC1 : <<include>>
-
-employee <|-- admin
-admin <|-- super
+UC18 --> MsgSys
+UC19 <-- PaymentSys
+UC06 ..> UC19 : <<include>>
 
 @enduml
