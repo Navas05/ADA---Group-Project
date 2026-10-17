@@ -1,6 +1,6 @@
 # Software Requirements
 
-> High-level specification outlining business goals, user needs, and technical behavior for the self-service ATM channel.
+> High-level specification outlining business goals, user needs, and technical behavior for TurbineH's internal invoicing, subscription, and payment tracking application.
 
 ## Business Requirements
 
@@ -8,7 +8,7 @@
 
 - BR-01: Facilitate invoice tracking and charges of the company's clients.
 
-- BR-02: Improve efficiency of the financial team.
+- BR-02: Improve efficiency of the financial team, minimizing manual intervention and clicks.
 
 ## User Requirements
 
