@@ -6,6 +6,7 @@
 
 - **Subscription/recurrent invoice**: A monthly payment given to clients using the Brain subcription.
 - **One-off invoice**: A one-time payment to be fulfilled at a certain date.
+- **Client**: Company subscribed to Brain OS.
 
 ## Business Requirements
 
@@ -23,33 +24,31 @@
 
 - **UR-01:** The employee must be able to access a daily work inbox with upcoming invoices and notifications.
 
-- **UR-02:** The employee must be able to register and update their assigned clients.
+- **UR-02:** The employee must be able to modify/cancel their assigned clients' subscriptions.
 
-- **UR-03:** The employee must be able to modify/cancel their assigned clients' subscriptions.
+- **UR-03:** The employee must be able to create and issue one-off invoices.
 
-- **UR-04:** The employee must be able to create and issue one-off invoices.
+- **UR-04:** The employee must be able to track payment statuses of their assigned clients.
 
-- **UR-05:** The employee must be able to track payment statuses of their assigned clients.
-
-- **UR-06:** The employee must be able to resend and reschedule their assigned clients' message deliveries.
+- **UR-05:** The employee must be able to resend and reschedule their assigned clients' message deliveries.
 
 ### Administrator
 
-- **UR-07:** The administrator must be able to view all clients and invoices globally.
+- **UR-06:** The administrator must be able to view all clients and invoices globally.
 
-- **UR-08:** The administrator must be able to (un)assign clients to employees.
+- **UR-07:** The administrator must be able to (un)assign clients to employees.
 
-- **UR-09:** The administrator must be able to import client records in bulk via CSV.
+- **UR-08:** The administrator must be able to import client records in bulk via CSV.
 
-- **UR-10:** The administrator must be able to consult the financial dashboard (weekly, monthly, quarterly, and annual) and export this data.
+- **UR-09:** The administrator must be able to consult the financial dashboard (weekly, monthly, quarterly, and annual) and export this data.
 
 ### Superadministrator
 
-- **UR-11:** The superadministrator must be able to configure global system parameters (must include: default payment terms, monthly payment dates)
+- **UR-10:** The superadministrator must be able to configure global system parameters (must include: default payment terms, monthly payment dates)
 
-- **UR-12:** The superadministrator must be able to assign roles (employee / administrator) to users.
+- **UR-11:** The superadministrator must be able to assign roles (employee / administrator) to users.
 
-- **UR-13:** The superadministrator must be able to access a system log of modifications.
+- **UR-12:** The superadministrator must be able to access a system log of modifications.
 
 ## System Requirements
 
@@ -81,7 +80,7 @@
 
 - **FR-11:** The system must generate corporate-branded PDF documents upon issuance.
 
-- **FR-12:** The system must send issued invoices and reminders via email and Whatsapp, if consented, and log delivery statuses.
+- **FR-12:** The system must send issued invoices and reminders via email and WhatsApp, if consented, and log delivery statuses.
 
 - **FR-13:** The system must allow reminder schedule configuration.
 
@@ -106,7 +105,7 @@
 - **NFR-03:** Corporate Identity on Generated Documents
   - **Description:** All generated invoice PDFs and client communications must strictly adhere to TurbineH's visual identity.
   - **Dependencies:** FR-11, FR-12
-  - **Metric:** A designer must validate 100% of all types of issued documents and client messages.
+  - **Metric:** A designer must validate all templates of issued documents and client messages.
 
 - **NFR-04:** Data Security
   - **Description:** Sensitive tax and financial documents must be protected against unauthorized access.
