@@ -463,161 +463,184 @@
 
 - **ID / Code:** UC-12
 - **Use Case Name:** Assign User Roles
-- **Description:** Lets the superadministrator give TurbineH staff access to the application, assign each user the `Employee` or `Administrator` role, change roles, and deactivate users.
+- **Description:** Allows the superadministrator to assign or modify the roles of registered users, controlling their access permissions within the application.
 - **Primary Actor:** Superadministrator
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - _Superadministrator:_ Wants to add staff freely as the administrative department grows, and control what each person can do.
-  - _Employees and Administrators:_ Want the permissions their work needs, and to get them straight away.
-  - _Clients:_ Want only authorised staff to reach their data (NFR-04).
-- **Preconditions:** The application is online and reachable from the superadministrator's device (NFR-02).
-- **Success Guarantee:** The user's role and status are stored and enforced from their next request (FR-02), and the change is recorded in the audit log (FR-03).
-- **Minimal Guarantee:** There is always at least one active Superadministrator. No account outside the `@turbineh.com` domain is ever created (FR-01). Every role change is traceable (FR-03).
-- **Trigger:** The superadministrator requests to manage the users of the application.
+  - **Superadministrator:** Wants to control user permissions and ensure that employees have access to the functionality required for their responsibilities.
+  - **Employees and Administrators:** Want their assigned roles to provide the appropriate system permissions.
+  - **TurbineH:** Wants to prevent unauthorized access to sensitive financial information.
+- **Preconditions:**
+  - The superadministrator is authenticated.
+  - The superadministrator has permission to manage user roles.
+  - The user whose role will be modified exists in the system.
+- **Success Guarantee:** The selected user's role is updated, the corresponding permissions are enforced, and the modification is recorded in the audit log.
+- **Minimal Guarantee:** If the operation fails, the user's previous role and permissions remain unchanged.
+- **Trigger:** The superadministrator requests to modify a user's role.
 - **Main Success Scenario:**
-
-1. **Superadministrator:** Requests the list of users.
-2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Superadministrator role (FR-02).
-3. **System:** Shows each user with their email, role, status and number of assigned clients.
-4. **Superadministrator:** Selects a user, or requests to add a new one with their company email.
-5. **Superadministrator:** Chooses the role (`Employee` or `Administrator`) and confirms.
-6. **System:** Checks that the email belongs to the `@turbineh.com` domain (FR-01).
-7. **System:** Stores the role and updates the user's permissions, which take effect from their next request (FR-02).
-8. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new role (FR-03).
-9. **System:** Confirms the change. For a new user, it also sends them access instructions.
-
+  1. **Superadministrator:** Accesses the user management section.
+  2. **System:** Displays the list of registered users and their assigned roles.
+  3. **Superadministrator:** Selects a user.
+  4. **System:** Displays the user's current role and available roles.
+  5. **Superadministrator:** Selects a new role (`Employee` or `Administrator`).
+  6. **Superadministrator:** Confirms the modification.
+  7. **System:** Validates the requested role assignment.
+  8. **System:** Updates the user's role and corresponding permissions.
+  9. **System:** Records the modification in the audit log (FR-03).
+  10. **System:** Confirms that the role has been updated successfully.
 - **Extensions:**
-  - **2a. The user does not have the Superadministrator role:**
-    - 2a1. UC-18 denies access and records the attempt (NFR-04). The use case ends.
-  - **5a. The superadministrator deactivates a user:**
-    - 5a1. System checks whether the user has assigned clients.
-    - 5a2. If they do, the system requires the clients to be reassigned through UC-07 first, or sends them to the administrators' inbox.
-    - 5a3. System closes the user's active sessions. The flow continues at step 8.
-  - **5b. The change would leave the system without an active Superadministrator:**
-    - 5b1. System rejects the change and explains why. The use case ends.
-  - **6a. The email is outside the `@turbineh.com` domain:**
-    - 6a1. System rejects it and asks for a company email. The flow continues at step 4.
-  - **6b. A user with that email already exists:**
-    - 6b1. System opens the existing user instead of creating a duplicate. The flow continues at step 5.
+  - **3a. The selected user no longer exists:**
+    - 3a1. System informs the superadministrator that the user cannot be found.
+    - 3a2. System returns to the user list.
+  - **7a. The requested role assignment is invalid:**
+    - 7a1. System rejects the modification.
+    - 7a2. System displays an error message.
+    - 7a3. Use case resumes at step 5.
+  - **8a. The system cannot save the modification:**
+    - 8a1. System preserves the user's previous role.
+    - 8a2. System informs the superadministrator that the operation failed.
+    - 8a3. Use case ends.
 
 ---
 
 ## UC-13: Access System Modification Log
 
 - **ID / Code:** UC-13
-- **Use Case Name:** Consult Audit Log
-- **Description:** Lets the superadministrator consult the audit log of all sensitive operations (who did what, when, and on which data), with search and filters.
+- **Use Case Name:** Access System Modification Log
+- **Description:** Allows the superadministrator to consult the history of sensitive operations performed within the application.
 - **Primary Actor:** Superadministrator
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - _Superadministrator:_ Wants to know who changed client data, invoices, permissions or configuration, and who accessed what.
-  - _TurbineH (management):_ Wants an audit trail that cannot be tampered with, for internal control and legal purposes.
-  - _Employees:_ Want their actions to be recorded accurately and attributed only to them.
-- **Preconditions:** The application is online and reachable from the superadministrator's device (NFR-02).
-- **Success Guarantee:** The superadministrator sees the log entries that match the criteria, with all their details. The consultation itself is recorded in the log.
-- **Minimal Guarantee:** The audit log is never shown to users without the Superadministrator role (FR-02). No log entry is ever changed or deleted by this use case (FR-03).
-- **Trigger:** The superadministrator requests to consult the audit log.
+  - **Superadministrator:** Wants to review modifications made to the system and identify the users responsible.
+  - **TurbineH:** Wants to maintain traceability of sensitive operations.
+  - **Employees and Administrators:** Want modifications to be accurately attributed to the responsible users.
+- **Preconditions:**
+  - The superadministrator is authenticated.
+  - The superadministrator has permission to access the audit log.
+- **Success Guarantee:** The superadministrator can consult the recorded history of sensitive system operations without modifying the stored entries.
+- **Minimal Guarantee:** The audit log remains unchanged regardless of whether the consultation succeeds or fails.
+- **Trigger:** The superadministrator requests access to the system modification log.
 - **Main Success Scenario:**
-
-1. **Superadministrator:** Requests the audit log.
-2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Superadministrator role (FR-02).
-3. **System:** Shows the most recent entries first, each with timestamp, user, role, operation, affected record, and outcome.
-4. **Superadministrator:** Filters the log by user, date range, operation type or affected record.
-5. **System:** Shows the matching entries (NFR-01).
-6. **Superadministrator:** Selects an entry.
-7. **System:** Shows the full detail of the entry, including the previous and new values when the operation changed data.
-8. **System:** Records the consultation in the audit log (FR-03).
-
+  1. **Superadministrator:** Accesses the audit log section.
+  2. **System:** Retrieves the recorded sensitive operations.
+  3. **System:** Displays the available log entries, ordered from most recent to oldest.
+  4. **Superadministrator:** Selects a log entry.
+  5. **System:** Displays the details of the selected operation.
+  6. **Superadministrator:** Reviews the information.
 - **Extensions:**
-  - **2a. The user does not have the Superadministrator role:**
-    - 2a1. UC-18 denies access and records the attempt (NFR-04). The use case ends.
-  - **5a. No entry matches the filters:**
-    - 5a1. System informs the superadministrator and keeps the filters. The flow continues at step 4.
-  - **7a. The superadministrator tries to change or delete an entry:**
-    - 7a1. System does not allow the change, because the log cannot be edited (FR-03), and records the attempt.
-  - **7b. The superadministrator requests a copy of the log:**
-    - 7b1. System generates a downloadable export of the filtered entries, and records the export in the log.
+  - **2a. The system cannot retrieve the audit log:**
+    - 2a1. System informs the superadministrator that the log is temporarily unavailable.
+    - 2a2. Use case ends.
+  - **3a. No audit entries exist:**
+    - 3a1. System informs the superadministrator that no operations have been recorded.
+    - 3a2. Use case ends.
+  - **4a. The selected entry is no longer available:**
+    - 4a1. System informs the superadministrator that the entry cannot be retrieved.
+    - 4a2. System returns to the log overview.
 
 ---
 
 ## UC-14: Generate Corporate-Branded PDF
 
 - **ID / Code:** UC-14
-- **Use Case Name:** Generate Invoice PDF
-- **Description:** Produces the official PDF of an issued invoice using TurbineH's approved corporate template, and stores it linked to the invoice. Every later copy of the invoice is this same document.
-- **Primary Actor:** None directly. It is executed through `«include»` by UC-03.
-- **Scope:** TurbineH Invoicing & Subscription System (Document Generation)
+- **Use Case Name:** Generate Corporate-Branded PDF
+- **Description:** Generates an invoice PDF using TurbineH's approved corporate identity and the corresponding invoice information.
+- **Primary Actor:** None directly; invoked by another use case.
+- **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - _TurbineH (management):_ Wants every invoice to follow the corporate identity exactly (NFR-03), and to contain all mandatory tax information.
-  - _Clients:_ Want a clear, legally valid invoice document.
-  - _TurbineH's external accountant:_ Wants the stored document to be identical to the one the client received.
-- **Preconditions:** The calling use case provides an invoice with status `Issued` and a definitive sequential number. The calling use case has already checked permissions through UC-18.
-- **Success Guarantee:** A PDF in the approved corporate format is generated and stored, linked to the invoice (FR-11, NFR-03). Its content matches the stored invoice data.
-- **Minimal Guarantee:** A PDF is never stored if it is incomplete or does not match the invoice data, and is never generated from a template the designer has not approved (NFR-03).
-- **Trigger:** UC-03 (step 9) requests the document for an issued invoice.
+  - **TurbineH:** Wants all generated invoices to follow the company's corporate identity.
+  - **Employees:** Want invoice documents to be generated automatically without manual formatting.
+  - **Clients:** Want to receive clear, consistent invoice documents.
+- **Preconditions:**
+  - An invoice has been issued.
+  - The required invoice information is available.
+  - An approved corporate PDF template is available.
+- **Success Guarantee:** A PDF document containing the invoice information and following TurbineH's approved corporate identity is successfully generated.
+- **Minimal Guarantee:** If PDF generation fails, the system does not return an incomplete document as a successfully generated invoice.
+- **Trigger:** A calling use case requests the generation of a PDF document for an issued invoice.
 - **Main Success Scenario:**
-
-1. **System:** Receives the issued invoice from the calling use case.
-2. **System:** Selects the active invoice template approved by the designer (NFR-03).
-3. **System:** Fills in the template with TurbineH's tax data, the client's tax data (legal name, tax ID, address), the invoice number, issue and due dates, the invoice lines, the taxable base, VAT and total, the payment instructions, and TurbineH's support contact details.
-4. **System:** Produces the PDF document (FR-11).
-5. **System:** Stores the PDF linked to the invoice, so that every later copy is the same document.
-6. **System:** Returns control to the calling use case.
-
+  1. **System:** Receives a PDF generation request containing the invoice identifier.
+  2. **System:** Retrieves the corresponding invoice information.
+  3. **System:** Retrieves the approved corporate PDF template.
+  4. **System:** Populates the template with the invoice information.
+  5. **System:** Generates the PDF document.
+  6. **System:** Makes the generated PDF available to the calling use case.
+  7. **System:** Returns control to the calling use case.
 - **Extensions:**
-  - **2a. No approved template is available:**
-    - 2a1. System stops the generation and returns a failure to the calling use case, which handles it (UC-03 9a).
-  - **3a. A mandatory field of the invoice is missing:**
-    - 3a1. System stops the generation, names the missing field, and returns a failure to the calling use case.
-  - **5a. The document cannot be stored:**
-    - 5a1. System discards the generated PDF and returns a failure to the calling use case.
+  - **2a. The invoice cannot be retrieved:**
+    - 2a1. System reports that the requested invoice is unavailable.
+    - 2a2. System returns a failure result to the calling use case.
+    - 2a3. Use case ends.
+  - **4a. Required invoice information is missing:**
+    - 4a1. System identifies the missing information.
+    - 4a2. System cancels PDF generation.
+    - 4a3. System returns a failure result to the calling use case.
+    - 4a4. Use case ends.
+  - **5a. PDF generation fails:**
+    - 5a1. System discards the incomplete document.
+    - 5a2. System returns a failure result to the calling use case.
+    - 5a3. Use case ends.
 
 ---
 
 ## UC-15: Send Invoices & Reminders
 
 - **ID / Code:** UC-15
-- **Use Case Name:** Send Invoices and Reminders
-- **Description:** Delivers issued invoices, payment reminders and overdue notices to clients through the External Messaging Services (email, and WhatsApp when the client has consented), and logs the delivery status of each channel.
-- **Primary Actor:** None directly. It is executed through `«include»` by UC-03, through `«extend»` by UC-05 (extension point "Resend now"), and by the reminder schedule. Secondary actor: **External Messaging Services**.
-- **Scope:** TurbineH Invoicing & Subscription System (Communications)
+- **Use Case Name:** Send Invoices & Reminders
+- **Description:** Sends issued invoices and payment reminders to clients through email and, when consented to, WhatsApp, recording the corresponding delivery statuses.
+- **Primary Actor:** None directly; invoked by another use case or a configured reminder schedule.
+- **Secondary Actor:** External Messaging Services
+- **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - _Clients:_ Want invoices and friendly reminders only through channels they have consented to, and support contact details in case of a payment problem.
-  - _Employees:_ Want to know whether each message reached the client, without checking each channel.
-  - _TurbineH (management):_ Wants collection reminders to be sent automatically and consistently (BR-02).
-- **Preconditions:** The calling use case or the reminder schedule provides an issued invoice and the message type: invoice issued, payment reminder, or overdue notice.
-- **Success Guarantee:** The message, in the approved corporate template (NFR-03), has been sent through every channel the client has consented to, and the delivery status of each channel is logged (FR-12).
-- **Minimal Guarantee:** No message is ever sent through a channel without consent, and no reminder is ever sent for an invoice that has already been paid. Every delivery attempt is logged with its result (FR-12).
-- **Trigger:** One of the following:
-  - UC-03 (step 10) includes it;
-  - UC-05 (extension 4a) extends into it;
-  - the reminder schedule reaches a reminder date (FR-13): day 3, day 5, and then the periodic overdue flow.
+  - **TurbineH:** Wants invoices and payment reminders to be delivered efficiently.
+  - **Employees:** Want to track message delivery without manually contacting clients.
+  - **Clients:** Want to receive relevant financial communications through authorized channels.
+- **Preconditions:**
+  - An issued invoice exists.
+  - The corresponding client has valid contact information for at least one permitted communication channel.
+  - The system has received a request to send an invoice or reminder.
+- **Success Guarantee:** The system submits the message through the applicable communication channels and records the delivery status reported by each external messaging service.
+- **Minimal Guarantee:** If delivery fails, the system records the failure without incorrectly marking the message as delivered. The system does not send WhatsApp messages to clients who have not consented to that channel.
+- **Trigger:** One of the following events occurs:
+  - An invoice is issued.
+  - A configured reminder becomes due.
+  - An employee requests to resend a message.
 - **Main Success Scenario:**
-
-1. **System:** Receives the invoice and the message type to send.
-2. **System:** Checks the current status of the invoice, to make sure the message still applies.
-3. **System:** Gets the contact person of the client and the channels they have consented to.
-4. **System:** Builds the message from the approved template for its type (NFR-03), including the invoice PDF or a link to it, the amount due, the due date, and TurbineH's support contact details.
-5. **System:** Sends the message by email through the External Messaging Services (FR-12).
-6. **System:** If the client has consented to WhatsApp, also sends the message through WhatsApp (FR-12).
-7. **External Messaging Services:** Return the delivery status of each channel.
-8. **System:** Logs the delivery status of each channel, linked to the invoice (FR-12).
-9. **System:** Returns control to the calling use case, or marks the scheduled reminder as sent.
-
+  1. **System:** Receives a request to send an invoice or payment reminder.
+  2. **System:** Retrieves the corresponding invoice and client information.
+  3. **System:** Verifies that the message is applicable to the invoice's current payment status.
+  4. **System:** Identifies the client's permitted communication channels.
+  5. **System:** Prepares the message using the approved corporate template.
+  6. **System:** Sends the message through the External Messaging Services using the applicable channels.
+  7. **External Messaging Services:** Return the available delivery information.
+  8. **System:** Records the delivery status of each channel.
+  9. **System:** Returns the operation result to the calling use case or scheduled process.
 - **Extensions:**
-  - **2a. The invoice was paid before a scheduled reminder:**
-    - 2a1. System cancels the reminder without sending it and logs the cancellation. The use case ends.
-  - **6a. The client has not consented to WhatsApp:**
-    - 6a1. System sends by email only. The flow continues at step 7.
-  - **7a. A messaging service cannot be reached, or rejects the message:**
-    - 7a1. System retries the delivery a limited number of times.
-    - 7a2. If every attempt fails, the system logs the channel as failed (FR-12) and creates a task in the assigned employee's inbox (FR-15) to resend the message through UC-05. The flow continues at step 8.
-  - **7b. The email bounces because the address is invalid:**
-    - 7b1. System logs the failure and creates a task in the assigned employee's inbox to review the client's contact data (FR-15).
+  - **2a. The invoice cannot be retrieved:**
+    - 2a1. System cancels the sending operation.
+    - 2a2. System reports the failure to the calling process.
+    - 2a3. Use case ends.
+  - **3a. A scheduled payment reminder is no longer applicable because the invoice has been paid:**
+    - 3a1. System cancels the reminder.
+    - 3a2. Use case ends.
+  - **4a. The client has not consented to WhatsApp communications:**
+    - 4a1. System excludes WhatsApp from the permitted channels.
+    - 4a2. Use case continues at step 5.
+  - **4b. No permitted communication channel is available:**
+    - 4b1. System cancels the sending operation.
+    - 4b2. System reports that no permitted channel is available.
+    - 4b3. Use case ends.
+  - **6a. An external messaging service rejects the delivery request:**
+    - 6a1. System records the failed attempt.
+    - 6a2. System reports the failure to the calling process.
+    - 6a3. Use case ends if no other channel remains available.
+  - **7a. The external service has not yet confirmed delivery:**
+    - 7a1. System records the message as pending delivery confirmation.
+    - 7a2. System updates the recorded status when the external service provides further information.
 
 ---
 
