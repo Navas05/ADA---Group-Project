@@ -1,22 +1,5 @@
 # Use Case Specification
 
-> Fully dressed specification of every use case in `use_case_diagram.pu`, for TurbineH's internal invoicing, subscription and payment tracking application. Each use case traces back to the requirements in `requirements.md`: User Requirements (UR) map to use cases, Functional Requirements (FR) appear as steps in the flows, and Non-Functional Requirements (NFR) appear as quality constraints on those steps.
-
-## Conventions
-
-- **Scope (all use cases):** TurbineH Invoicing & Subscription System (internal application, independent from Brain OS).
-- **Actor inheritance:** `Administrator` inherits every use case of `Employee`, and `Superadministrator` inherits every use case of `Administrator`. When an Administrator runs an Employee use case, the scope is all clients, not only the assigned ones (FR-02).
-- **External actors:** `External Payment Service` (Stripe, simulated in this project) and `External Messaging Services` (email and WhatsApp).
-- **Authentication and permissions:** As the diagram notes, **UC-18: Authenticate & Check User Permissions** is included in every use case. It is the first step of every use case started by a human actor. The subfunctions UC-14, UC-15 and UC-17 run inside the use case that calls them, so they rely on the check that use case has already made.
-- **Writing rules:** Steps are written in active voice as a dialogue between the actor and the system, and do not mention any specific interface.
-  - An `«include»` is written as a step where the system executes the included use case.
-  - An `«extend»` is written as an extension of the base use case, in which the extending use case is executed.
-  - Preconditions are only conditions that the system assumes and does not check at runtime. Anything that the system checks while the use case runs is an extension.
-- **Invoice statuses (FR-10):** `Draft`, `Scheduled`, `Issued`, `Overdue`, `Paid`, `Void`.
-- **Subscription statuses (FR-07):** `Active`, `Paused`, `Cancellation Pending Settlement`, `Cancelled`.
-
----
-
 ## UC-01: Access Daily Work Inbox
 
 - **ID / Code:** UC-01
