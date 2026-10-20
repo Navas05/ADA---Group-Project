@@ -632,74 +632,68 @@
 ## UC-16: Sync & Update Invoice Payment Status
 
 - **ID / Code:** UC-16
-- **Use Case Name:** Synchronize Payment Status
-- **Description:** Receives or retrieves payment information from the External Payment Service (Stripe, simulated in this project), matches each payment to its invoice, and updates the invoice status automatically. It also marks invoices as overdue when they pass their due date unpaid.
+- **Use Case Name:** Sync & Update Invoice Payment Status
+- **Description:** Receives/retrieves payment information from the External Payment Service (Stripe), maps each payment to its invoice, and updates the invoice status. It also marks invoices as overdue when they go over the due date as unpaid.
 - **Primary Actor:** **External Payment Service**. It is also executed through `«include»` by UC-04.
-- **Scope:** TurbineH Invoicing & Subscription System (Payment Integration)
+- **Scope:** TurbineH Invoicing & Subscription System 
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - _Employees:_ Want to be told as soon as a client of theirs has paid, and to stop chasing paid invoices.
-  - _TurbineH (management):_ Wants payment tracking to be automatic, with no manual checking of Stripe or the bank account (BR-01, BR-02).
+  - _Employees:_ Want to be updated on the status of their client's invoices as soon as a possible: (when the client has paid to stop chasing paid invoices.) or (when the due date is over, to chase the client for the unpaid invoice)
+  - _TurbineH :_ Wants payment tracking to be automatic, with no manual checking of Stripe or the bank account (BR-01, BR-02).
   - _Clients:_ Want their payment to be recognised straight away, so they stop receiving reminders.
-- **Preconditions:** The integration with the External Payment Service is configured.
-- **Success Guarantee:** Each payment received is matched to its invoice, and the invoice is marked `Paid` (FR-10, FR-14). Its pending reminders are cancelled (FR-13), and the assigned employee is notified (FR-15).
-- **Minimal Guarantee:** An invoice is never marked as paid without a payment event that matches it. A payment event that has already been processed never changes any data.
-- **Trigger:** The External Payment Service sends a payment event, the periodic synchronisation runs, or UC-04 (step 3) requests an update.
+- **Preconditions:** The integration with the External Payment Service is configured. 
+- **Success Guarantee:** Each payment received is mapped to its invoice, and the invoice is correctly marked as `Paid` (FR-10, FR-14). Its pending reminders are cancelled (FR-13), and the assigned employee is notified (FR-15).
+- **Minimal Guarantee:** An invoice is never marked as paid that has not been paid (no matching payment).
+- **Trigger:** The External Payment Service sends a payment event, UC-04 (step 3) requests an update.
 - **Main Success Scenario:**
-
-1. **External Payment Service:** Reports one or more payment events (reference, amount, date).
-2. **System:** Checks that each event really comes from the External Payment Service and has not already been processed.
-3. **System:** Matches each payment to its invoice by payment reference and amount (FR-14).
-4. **System:** Changes the invoice status to `Paid` and records the payment date and amount (FR-10).
-5. **System:** Cancels the pending reminders of the invoice (FR-13).
-6. **System:** Notifies the employee assigned to the client through their inbox (FR-15).
-7. **System:** If the client's subscription is `Cancellation Pending Settlement` and no unpaid invoices remain, changes its status to `Cancelled` (FR-07).
-8. **System:** Records the status change in the audit log (FR-03).
-
-- **Extensions:**
-  - **1a. The External Payment Service cannot be reached during the synchronisation:**
-    - 1a1. System keeps the current statuses, logs the failed synchronisation, and tries again in the next cycle.
-    - 1a2. System returns the time of the last successful synchronisation to the calling use case (UC-04 3a).
+  1. **External Payment Service:** Reports one or more payment events (reference, amount, date).
+  2. **System:** Checks that each event really comes from the External Payment Service and has not already been processed.
+  3. **System:** Maps each payment to its invoice by  using payment references (FR-14).
+  4. **System:** Updates the invoice status to `Paid` and records it's data (FR-10).
+  5. **System:** Cancels the pending reminders of the invoice (FR-13).
+  6. **System:** Notifies the employee assigned to the client through their "operational task inbox" (FR-15).
+  7. **System:** If the client's subscription is `Cancellation Pending Settlement` and no unpaid invoices remain, changes its status to `Cancelled` (FR-07).
+  8. **System:** Records the status changes in the audit log (FR-03).
+- **Extensions:** 
+  - **1a. The External Payment Service cannot be reached:**
+    - 1a1. System keeps the current statuses, logs the failed synchronisation, and tries again.
   - **2a. The event cannot be verified as coming from the External Payment Service:**
-    - 2a1. System rejects the event without changing any data, and records the attempt (NFR-04).
+    - 2a1. System rejects the event, and records the attempt (NFR-04).
   - **2b. The event has already been processed:**
     - 2b1. System ignores it without changing any data.
   - **3a. The payment cannot be matched to any invoice:**
-    - 3a1. System stores the payment as unmatched and creates a reconciliation task in the administrators' inbox (FR-15). The flow continues with the next event.
+    - 3a1. System stores the payment as unmatched and creates a reconciliation task in the administrators' inbox (FR-15). Then it continues with the next event.
   - **3b. The amount paid is different from the invoice amount:**
-    - 3b1. System does not mark the invoice as `Paid`. It records the payment received and creates a task for the assigned employee to review the difference (FR-15).
+    - 3b1. System does not mark the invoice as `Paid`. It records the payment received and notifies the assigned employee to review the difference (FR-15).
   - **4a. An invoice reaches its due date with no matching payment:**
     - 4a1. System changes its status to `Overdue` (FR-10).
-    - 4a2. System starts the periodic overdue reminder flow for it (FR-13) and adds it to the assigned employee's inbox (FR-15).
+    - 4a2. System starts the periodic reminder flow(FR-13) and adds it to the assigned employee's inbox (FR-15).
 
 ---
 
 ## UC-17: Record Uneditable Audit Log
 
 - **ID / Code:** UC-17
-- **Use Case Name:** Record Audit Entry
-- **Description:** Adds an entry to the audit log for every sensitive operation. The entry records who did what, when, and on which data. Once written, an entry can never be changed or deleted.
+- **Use Case Name:** Record Uneditable Audit Log
+- **Description:** Adds an entry to the audit log for every tracked operation. The entry records who did what, when, and on which data. Once written, an entry can never be changed or deleted.
 - **Primary Actor:** None directly. It is executed through `«include»` by UC-02, UC-03, UC-07, UC-08, UC-11 and UC-12.
-- **Scope:** TurbineH Invoicing & Subscription System (Audit Layer)
+- **Scope:** TurbineH Invoicing & Subscription System 
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
   - _Superadministrator:_ Wants a complete and reliable history of sensitive operations (UR-12).
-  - _TurbineH (management):_ Wants traceability for internal control and legal purposes, and protection of client tax data (NFR-04).
-  - _Employees:_ Want their actions to be attributed to them correctly.
-- **Preconditions:** The calling use case has completed a sensitive operation and provides its details.
-- **Success Guarantee:** A new entry with the operation details is permanently added to the audit log (FR-03) and can be consulted through UC-13.
-- **Minimal Guarantee:** No existing entry is ever changed or deleted. No sensitive operation is ever confirmed to the user without its audit entry.
-- **Trigger:** Executed by a calling use case after a sensitive operation (see Primary Actor).
+  - _TurbineH :_ Wants traceability for internal control and legal purposes, and protection of client data (NFR-04).
+  - _Employees:_ Don't want an operation to be wrongly attributed to them.
+- **Preconditions:** The calling use case has completed a tracked operation and provides its details.
+- **Success Guarantee:** A new entry with the operation details is added to the audit log (FR-03) and can be read through UC-13.
+- **Minimal Guarantee:** Immutability is ensured for all current and future logs.
+- **Trigger:** Executed by a calling use case after a tracked operation.
 - **Main Success Scenario:**
-
-1. **System:** Receives the operation details from the calling use case: user, role, operation type, affected record, previous and new values, and outcome.
-2. **System:** Adds the timestamp of the operation.
-3. **System:** Adds the entry to the audit log so that it can never be modified, and so that any change to it would be detected (FR-03).
-4. **System:** Returns control to the calling use case.
-
-- **Extensions:**
-  - **3a. The audit log cannot be written:**
-    - 3a1. System reverts the sensitive operation of the calling use case, so that no operation goes unrecorded.
+  1. **System:** Receives the operation details from the calling use case: user, role, operation type, affected record, previous and new values, outcome, ... .
+  2. **System:** Adds the timestamp of the operation.
+  3. **System:** Adds the entry to the audit log so that it can never be modified(FR-03).
+- **Extensions:** 
+  - **3a. The audit log cannot be written to:**
+    - 3a1. System reverts the operation of the calling use case, so that the operation does not go unrecorded.
     - 3a2. System informs the user that the operation could not be completed and should be tried again later.
     - 3a3. System records a technical failure for the Superadministrator.
 
@@ -708,32 +702,29 @@
 ## UC-18: Authenticate & Check User Permissions
 
 - **ID / Code:** UC-18
-- **Use Case Name:** Authenticate and Authorize User
-- **Description:** Checks that the person using the application is a signed-in TurbineH staff member, signing them in with their `@turbineh.com` email and password if needed. It then checks that their role and assigned clients allow the operation they are attempting.
-- **Primary Actor:** None directly. It is executed through `«include»` by every use case, on behalf of the Employee, Administrator or Superadministrator who started it.
-- **Scope:** TurbineH Invoicing & Subscription System (Security Layer)
+- **Use Case Name:** Authenticate & Check User Permissions
+- **Description:** Checks that the person using the application is a signed-in TurbineH staff member, signed in with their `@turbineh.com` email and password needed. It then checks that their role and assigned clients allow the operation they are attempting.
+- **Primary Actor:** None directly. It is executed through `«include»` by every use case.
+- **Scope:** TurbineH Invoicing & Subscription System 
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - _Employees, Administrators and Superadministrator:_ Want to sign in quickly from any device (NFR-02), without extra authentication steps.
-  - _TurbineH (management):_ Wants only TurbineH staff to reach client tax and financial data, and each person only for their own role and clients (NFR-04).
+  - _Employees, Administrators and Superadministrator:_ Want to have quick acces to different pages from any device (NFR-02), 
+  - _TurbineH :_ Wants only TurbineH staff to reach client tax and financial data, and each employee only for their own role and clients (NFR-04).
   - _Clients:_ Want their data to be seen only by the staff who manage their account.
 - **Preconditions:** The application is online and reachable from the user's device (NFR-02).
-- **Success Guarantee:** The user has an authenticated session (FR-01), and the requested operation is allowed by their role and assigned clients (FR-02). Control returns to the calling use case.
+- **Success Guarantee:** The user has an authenticated session (FR-01), and the requested operation is allowed by their role and assigned clients (FR-02).
 - **Minimal Guarantee:** No operation is ever allowed for a user who is not authenticated, whose email is outside the `@turbineh.com` domain, or whose role or client scope does not permit it. Every failed or denied access is logged (NFR-04).
 - **Trigger:** Any use case starts (see Primary Actor).
 - **Main Success Scenario:**
-
-1. **System:** Checks whether the user has an active, unexpired session.
-2. **System:** Requests the company email address and the password, because no active session exists.
-3. **User:** Enters the credentials and submits them.
-4. **System:** Checks that the email address belongs to the `@turbineh.com` domain (FR-01).
-5. **System:** Checks the password against the stored credentials of that account (FR-01).
-6. **System:** Opens an authenticated session and loads the user's role (`Employee`, `Administrator` or `Superadministrator`) and assigned clients (FR-02).
-7. **System:** Records the sign-in in the audit log (FR-03).
-8. **System:** Checks that the user's role allows the requested operation and, for client-specific operations, that the client is within the user's scope (FR-02).
-9. **System:** Returns control to the calling use case, which then continues.
-
-- **Extensions:**
+  1. **System:** Checks whether the user has an active, unexpired session.
+  2. **System:** Requests the company email address and the password, because no active session exists.
+  3. **User:** Enters the credentials and submits them.
+  4. **System:** Checks that the email address belongs to the `@turbineh.com` domain (FR-01).
+  5. **System:** Checks the password against the stored credentials of that account (FR-01).
+  6. **System:** Opens an authenticated session and loads the user's role (`Employee`, `Administrator` or `Superadministrator`) and assigned clients (FR-02).
+  7. **System:** Records the sign-in to the audit log (FR-03).
+  8. **System:** Checks that the user's role allows the requested operation and, for client-specific operations, that the client is within the user's scope (FR-02).
+- **Extensions:**   
   - **1a. The user already has an active session:**
     - 1a1. System skips steps 2–7. The flow continues at step 8.
   - **3a. Missing mandatory fields:**
@@ -741,37 +732,12 @@
   - **4a. Email outside the `@turbineh.com` domain:**
     - 4a1. System rejects the attempt without checking the password.
     - 4a2. System informs the user that only TurbineH company accounts can sign in.
-    - 4a3. System records the blocked attempt in the audit log (NFR-04). The calling use case ends.
+    - 4a3. System records the blocked attempt in the audit log (NFR-04).
   - **5a. Invalid credentials:**
     - 5a1. System shows a generic message, "Invalid email or password", without revealing which of the two was wrong.
     - 5a2. System increases the failed-attempt counter of the account and records the attempt (NFR-04). The flow continues at step 2.
   - **5b. Account deactivated or without an assigned role:**
-    - 5b1. System refuses to open a session, informs the user that they should contact the Superadministrator, and records the attempt (NFR-04). The calling use case ends.
+    - 5b1. System refuses to open a session, informs the user that they should contact the Superadministrator, and records the attempt (NFR-04).
   - **8a. The user's role or client scope does not allow the operation:**
     - 8a1. System denies the operation and informs the user that they do not have permission.
-    - 8a2. System records the denied access in the audit log (NFR-04). The calling use case ends.
-
----
-
-## Traceability Matrix
-
-| Use Case | User Requirements | Functional Requirements | Non-Functional Requirements |
-| -------- | ----------------- | ----------------------- | --------------------------- |
-| UC-01 | UR-01 | FR-02, FR-06, FR-12, FR-13, FR-14, FR-15 | NFR-01, NFR-02 |
-| UC-02 | UR-02 | FR-02, FR-03, FR-06, FR-07, FR-13 | NFR-04 |
-| UC-03 | UR-03 | FR-02, FR-03, FR-09, FR-10, FR-11, FR-12, FR-13, FR-15 | NFR-01, NFR-03 |
-| UC-04 | UR-04 | FR-02, FR-03, FR-10, FR-14 | NFR-01 |
-| UC-05 | UR-05 | FR-02, FR-12, FR-13, FR-15 | NFR-04 |
-| UC-06 | UR-06 | FR-02 | NFR-01, NFR-04 |
-| UC-07 | UR-07 | FR-02, FR-03, FR-15 | NFR-04 |
-| UC-08 | UR-08 | FR-03, FR-04, FR-05, FR-06 | NFR-02 |
-| UC-09 | UR-09 | FR-02, FR-10, FR-14 | NFR-02, NFR-04 |
-| UC-10 | UR-09 | — | NFR-04 |
-| UC-11 | UR-10 | FR-02, FR-03, FR-06, FR-13 | NFR-04 |
-| UC-12 | UR-11 | FR-01, FR-02, FR-03 | NFR-04 |
-| UC-13 | UR-12 | FR-02, FR-03 | NFR-01, NFR-04 |
-| UC-14 | — | FR-11 | NFR-03 |
-| UC-15 | — | FR-12, FR-13, FR-15 | NFR-03 |
-| UC-16 | — | FR-03, FR-07, FR-10, FR-13, FR-14, FR-15 | NFR-04 |
-| UC-17 | UR-12 | FR-03 | NFR-04 |
-| UC-18 | — | FR-01, FR-02, FR-03 | NFR-02, NFR-04 |
+    - 8a2. System records the denied access in the audit log (NFR-04).
