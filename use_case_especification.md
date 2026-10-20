@@ -21,52 +21,47 @@
 
 - **ID / Code:** UC-01
 - **Use Case Name:** Access Daily Work Inbox
-- **Description:** Shows the employee a single list of the day's operational tasks for their assigned clients (upcoming invoices, scheduled reminders, overdue payments, confirmed payments and failed deliveries), so they can act on each one with as few steps as possible.
+- **Description:** Shows the employee a list of the most important pending tasks that require their attention. 
 - **Primary Actor:** Employee
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - _Employee:_ Wants one starting point that shows what needs attention today, without searching through clients and invoices.
+  - _Employee:_ Wants to know the important information quickly without being saturated with too many information.
   - _TurbineH (management):_ Wants information to reach the right person, so that no payment or event goes unnoticed (BR-01, BR-02).
-  - _Clients:_ Want problems with their invoices (such as failed deliveries or payments that were not detected) to be handled quickly.
+  - _Clients:_ Want problems with their invoices to be handled quickly.
 - **Preconditions:** The application is online and reachable from the employee's device (NFR-02).
 - **Success Guarantee:** The employee sees an up-to-date list of pending tasks, ordered by priority and limited to their assigned clients. Each task leads straight to the use case that resolves it.
-- **Minimal Guarantee:** The inbox never shows tasks or data for clients outside the employee's permitted scope (FR-02). Viewing the inbox never changes the state of any invoice or subscription.
-- **Trigger:** The employee opens the application, or asks to open the inbox.
+- **Minimal Guarantee:** The inbox never shows tasks or data for clients outside the employee's permitted scope (FR-02).
+- **Trigger:** The employee opens the application.
 - **Main Success Scenario:**
-
-1. **Employee:** Requests the Daily Work Inbox.
-2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify the employee's identity and load their role and assigned clients (FR-01, FR-02).
-3. **System:** Collects the pending tasks for the employee's assigned clients (FR-15):
-   - invoices due to be issued in the coming days (FR-06);
-   - reminders scheduled for today (FR-13);
-   - invoices past their due date;
-   - payments confirmed since the last visit (FR-14);
-   - message deliveries that failed (FR-12).
-4. **System:** Shows the tasks grouped by type and ordered by urgency (due date first), with a counter for each group.
-5. **Employee:** Selects a task.
-6. **System:** Shows the task details (client, invoice, amount, dates, history) and offers the actions that apply to it: track the payment (UC-04), manage its messages (UC-05), create a one-off invoice (UC-03) or manage the subscription (UC-02).
-7. **Employee:** Chooses one action and completes it in the corresponding use case.
-8. **System:** Marks the task as resolved and removes it from the pending list.
-
+  1. **Employee:** Opens the application.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify the employee's identity and load their role and assigned clients (FR-01, FR-02).
+  3. **System:** Collects the pending tasks for the employee's assigned clients (FR-15):
+    - invoices due to be issued in the coming days (FR-06);
+    - reminders scheduled for today (FR-13);
+    - invoices past their due date;
+    - payments confirmed since the last visit (FR-14);
+    - message deliveries that failed (FR-12).
+  4. **System:** Shows the tasks.
+  5. **Employee:** Selects a task.
+  6. **System:** Shows the task details (client, invoice, amount, dates, history) and offers the actions that apply to it: track the payment (UC-04), manage its messages (UC-05), create a one-off invoice (UC-03) or manage the subscription (UC-02).
+  7. **Employee:** Chooses one action and completes it in the corresponding use case.
+  8. **System:** Marks the task as resolved and removes it from the pending list.
 - **Extensions:**
   - **3a. No pending tasks:**
     - 3a1. System informs the employee that there are no pending tasks for today. The use case ends.
-  - **3b. The actor is an Administrator:**
-    - 3b1. System also includes tasks for every client, and tasks for clients that have no assigned employee (FR-02). The flow continues at step 4.
   - **5a. The task is no longer valid when it is selected (for example, the invoice was paid in the meantime):**
     - 5a1. System informs the employee that the task has already been resolved.
     - 5a2. System refreshes the inbox. The flow continues at step 4.
   - **7a. The employee closes the task without acting on it:**
-    - 7a1. System keeps the task pending and lets the employee postpone it to a later date.
 
 ---
 
-## UC-02: Modify / Pause / Cancel Subscriptions
+## UC-02: Modify / Cancel Subscriptions
 
 - **ID / Code:** UC-02
 - **Use Case Name:** Manage Client Subscription
-- **Description:** Lets an employee modify, pause, resume or cancel the subscription of an assigned client. Pausing or cancelling stops new monthly invoices from being generated, but every unpaid invoice stays in the collection flow until it is settled.
+- **Description:** Lets an employee modify or cancel the subscription of an assigned client. Cancelling stops new monthly invoices from being generated, but every unpaid invoice stays in the collection flow until it is settled.
 - **Primary Actor:** Employee
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
@@ -79,33 +74,27 @@
 - **Minimal Guarantee:** Invoices that have already been issued are never changed or removed by a subscription change. Unpaid invoices are never taken out of the collection and reminder flow (FR-07).
 - **Trigger:** The employee selects the subscription of an assigned client in order to change it (from UC-01, UC-04 or the client record).
 - **Main Success Scenario:**
-
-1. **Employee:** Selects the subscription of a client.
-2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may manage this client's subscription (FR-02).
-3. **System:** Shows the subscription's status, monthly fee, next billing date and the list of unpaid invoices.
-4. **Employee:** Chooses the action to perform: modify the terms, pause, resume or cancel.
-5. **System:** Shows a summary of the effects: which future invoices will or will not be generated, and which unpaid invoices will stay in collection.
-6. **Employee:** Confirms the action.
-7. **System:** Applies the action (FR-07):
-   - **modify:** stores the new terms, which apply from the next generated invoice;
-   - **pause:** sets the status to `Paused` and suspends new monthly invoices;
-   - **resume:** sets the status to `Active` and schedules the next monthly invoice (FR-06);
-   - **cancel:** stops new monthly invoices and sets the status to `Cancelled`.
-8. **System:** Keeps every unpaid invoice of the client in the active collection and reminder flow (FR-07, FR-13).
-9. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new subscription state (FR-03).
-10. **System:** Confirms the change and shows the updated subscription.
-
+  1. **Employee:** Selects the subscription of a client.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may manage this client's subscription (FR-02).
+  3. **System:** Shows the subscription's status, monthly fee, next billing date and the list of unpaid invoices.
+  4. **Employee:** Chooses the action to perform: modify the terms or cancel.
+  5. **System:** Applies the action (FR-07):
+    - **modify:** stores the new terms, which apply from the next generated invoice;
+    - **cancel:** stops new monthly invoices and sets the status to cancelled.
+  6. **System:** Keeps every unpaid invoice of the client in the active collection and reminder flow (FR-07, FR-13).
+  7. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new subscription state (FR-03).
+  8. **System:** Confirms the change and shows the updated subscription.
 - **Extensions:**
   - **2a. The employee has no permission over this client:**
     - 2a1. UC-18 denies the operation and records the denied access (FR-02, NFR-04). The use case ends.
-  - **4a. The chosen action does not apply to the current status (for example, pausing an already paused subscription, or modifying a cancelled one):**
-    - 4a1. System informs the employee and offers only the actions that apply. The flow continues at step 4.
+  - **4a. The chosen action does not apply to the current status: **
+    - 4a1. System informs the employee and offers only the actions that apply.
   - **6a. The employee does not confirm:**
     - 6a1. System discards the action without changing anything. The use case ends.
   - **7a. Cancellation with unpaid invoices:**
-    - 7a1. System sets the status to `Cancellation Pending Settlement` instead of `Cancelled`, and stops generating new invoices.
+    - 7a1. System sets the status to Cancellation Pending Settlement instead of Cancelled, and stops generating new invoices.
     - 7a2. System informs the employee that the cancellation will be completed once every pending invoice has been paid.
-    - 7a3. When UC-16 detects that the last pending invoice is paid, the system changes the status to `Cancelled`. The flow continues at step 8.
+    - 7a3. When UC-16 detects that the last pending invoice is paid, the system changes the status to cancelled.
 
 ---
 
@@ -113,35 +102,31 @@
 
 - **ID / Code:** UC-03
 - **Use Case Name:** Create or Issue One-Off Invoice
-- **Description:** Lets an employee create a one-off invoice for an assigned client (for example, for an extra service such as an on-premise installation). The employee can save it as a draft, or issue it with a sequential number and VAT, which generates its branded PDF and sends it to the client.
+- **Description:** Lets an employee create a one-off invoice for an assigned client. The employee can issue it with a sequential number and VAT, which generates its branded PDF and sends it to the client.
 - **Primary Actor:** Employee
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - _Employee:_ Wants to issue an invoice in less than 60 seconds and with very few steps (NFR-01).
-  - _TurbineH (management):_ Wants legally valid invoices (sequential numbering, tax data, VAT) that are delivered and tracked without manual follow-up (BR-01, BR-02).
+  - _Employee:_ Wants to issue an invoice with very few steps (NFR-01).
+  - _TurbineH (management):_ Wants legally valid invoices that are delivered and tracked without manual follow-up (BR-01, BR-02).
   - _Clients:_ Want a correct invoice that follows TurbineH's corporate identity and arrives through their consented channels.
-  - _TurbineH's external accountant:_ Wants consistent invoice numbering with no gaps, for tax filing.
 - **Preconditions:** The client is stored in the system (FR-04).
-- **Success Guarantee:** The invoice is stored as `Issued` with a definitive sequential number (FR-09, FR-10). Its corporate PDF is generated and stored (FR-11), it is delivered to the client and the delivery status is logged (FR-12), payment reminders are scheduled (FR-13), and the operation is recorded in the audit log (FR-03).
+- **Success Guarantee:** The invoice is stored with a definitive sequential number (FR-09, FR-10). Its corporate PDF is generated and stored (FR-11), it is delivered to the client and the delivery status is logged (FR-12), payment reminders are scheduled (FR-13), and the operation is recorded in the audit log (FR-03).
 - **Minimal Guarantee:** Invoice numbering stays sequential with no gaps or duplicates. No invoice is ever sent to a client without a stored PDF that matches the stored invoice data.
 - **Trigger:** The employee requests to create a one-off invoice for a client (from UC-01 or the client record).
 - **Main Success Scenario:**
-
-1. **Employee:** Requests to create a one-off invoice for a client.
-2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may invoice this client (FR-02).
-3. **System:** Shows a new invoice already filled in with the client's tax data, today's issue date and a due date calculated from the default payment terms (UC-11).
-4. **Employee:** Enters the invoice lines (concept, quantity, unit price) and, if needed, changes the dates.
-5. **System:** Checks the data and calculates the taxable base, VAT and total amount.
-6. **System:** Shows a summary of the invoice for review.
-7. **Employee:** Confirms the issue.
-8. **System:** Assigns the next sequential invoice number and stores the invoice with status `Issued` (FR-09, FR-10).
-9. **System:** Executes **UC-14: Generate Corporate-Branded PDF** for the invoice (FR-11, NFR-03).
-10. **System:** Executes **UC-15: Send Invoices & Reminders** to deliver the invoice to the client (FR-12).
-11. **System:** Schedules the payment reminders according to the configured reminder schedule (FR-13).
-12. **System:** Executes **UC-17: Record Uneditable Audit Log** to record the invoice issue (FR-03).
-13. **System:** Confirms the issue to the employee and shows the invoice with its delivery status.
-
+  1. **Employee:** Requests to create a one-off invoice for a client.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may invoice this client (FR-02).
+  3. **System:** Shows a new invoice already filled in with the client's tax data, today's issue date and a due date calculated from the default payment terms (UC-11).
+  4. **Employee:** Enters the invoice lines (concept, quantity, unit price) and, if needed, changes the dates.
+  5. **System:** Checks the data and calculates the taxable base, VAT and total amount.
+  6. **System:** Shows a summary of the invoice for review.
+  7. **Employee:** Confirms the issue.
+  8. **System:** Executes **UC-14: Generate Corporate-Branded PDF** for the invoice (FR-11, NFR-03).
+  9. **System:** Executes **UC-15: Send Invoices & Reminders** to deliver the invoice to the client (FR-12).
+  10. **System:** Schedules the payment reminders according to the configured reminder schedule (FR-13).
+  11. **System:** Executes **UC-17: Record Uneditable Audit Log** to record the invoice issue (FR-03).
+  12. **System:** Confirms the issue to the employee and shows the invoice with its delivery status.
 - **Extensions:**
   - **2a. The employee has no permission over this client:**
     - 2a1. UC-18 denies the operation and records the denied access (FR-02, NFR-04). The use case ends.
@@ -151,16 +136,16 @@
     - 5a1. System flags the incorrect fields.
     - 5a2. System asks the employee to correct them and keeps the valid data. The flow continues at step 4.
   - **7a. The employee saves the invoice without issuing it:**
-    - 7a1. System stores the invoice as `Draft`, without a number and without sending it.
+    - 7a1. System stores the invoice as a draft, without a number and without sending it.
     - 7a2. System executes **UC-17** to record that the draft was created. The use case ends.
   - **7b. The employee sets a future issue date:**
-    - 7b1. System stores the invoice as `Scheduled` and will run steps 8–12 automatically on that date. The use case ends.
+    - 7b1. System stores the invoice and will run steps 8–12 automatically on that date. The use case ends.
   - **9a. The PDF cannot be generated:**
     - 9a1. System does not send the invoice. It keeps the assigned number and marks the invoice as pending delivery.
     - 9a2. System creates a task in the employee's inbox (FR-15) to retry the delivery. The flow continues at step 12.
   - **10a. Delivery fails on every channel:**
-    - 10a1. System keeps the invoice as `Issued` and logs the failure (FR-12).
-    - 10a2. System creates a task in the employee's inbox to resend the invoice through UC-05. The flow continues at step 11.
+    - 10a1. System keeps the invoice and logs the failure (FR-12).
+    - 10a2. System creates a task in the employee's inbox to resend the invoice through UC-05.
 
 ---
 
@@ -181,14 +166,14 @@
 - **Minimal Guarantee:** Invoice data of clients outside the employee's scope is never shown. The system always shows when it was last updated.
 - **Trigger:** The employee requests the payment tracking overview (from UC-01 or directly).
 - **Main Success Scenario:**
-    1. **Employee:** Requests the payment status of their assigned clients' invoices.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify the employee and load their assigned clients (FR-02).
-    3. **System:** Executes **UC-16: Sync & Update Invoice Payment Status** to get the latest payment information (FR-14).
-    4. **System:** Lists the invoices of the assigned clients with their status, amount, issue date, due date, days overdue and number of reminders sent (FR-10).
-    5. **Employee:** Filters or searches the list (by status, recurring or one-off, date range, client, location or business area).
-    6. **System:** Shows the matching invoices in under 1.5 seconds (NFR-01).
-    7. **Employee:** Selects an invoice.
-    8. **System:** Shows the invoice details: payment events, delivery log per channel, reminders sent and scheduled, and access to the stored PDF.
+  1. **Employee:** Requests the payment status of their assigned clients' invoices.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify the employee and load their assigned clients (FR-02).
+  3. **System:** Executes **UC-16: Sync & Update Invoice Payment Status** to get the latest payment information (FR-14).
+  4. **System:** Lists the invoices of the assigned clients with their status, amount, issue date, due date, days overdue and number of reminders sent (FR-10).
+  5. **Employee:** Filters or searches the list (by status, recurring or one-off, date range, client, location or business area).
+  6. **System:** Shows the matching invoices in under 1.5 seconds (NFR-01).
+  7. **Employee:** Selects an invoice.
+  8. **System:** Shows the invoice details: payment events, delivery log per channel, reminders sent and scheduled, and access to the stored PDF.
 - **Extensions:**
   - **3a. The External Payment Service is unavailable:**
     - 3a1. System shows the last known statuses, together with the date and time of the last successful update.
@@ -215,14 +200,14 @@
 - **Minimal Guarantee:** No message is ever sent through a channel the client has not consented to. Every delivery attempt and schedule change is logged.
 - **Trigger:** The employee selects an invoice or one of its messages in order to review it (from UC-01 or UC-04).
 - **Main Success Scenario:**
-    1. **Employee:** Selects an issued invoice of a client.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may manage this client's messages (FR-02).
-    3. **System:** Shows the delivery history of the invoice (message type, channel, date, delivery status) and its pending scheduled reminders.
-    4. **Employee:** Selects a pending reminder and chooses a new date and time, and the channels to use (from those the client has consented to).
-    5. **System:** Checks that the new date is in the future and that the channels are consented to.
-    6. **System:** Stores the new date in the reminder schedule of the invoice (FR-13).
-    7. **System:** Logs the schedule change (FR-12).
-    8. **System:** Confirms the change to the employee.
+  1. **Employee:** Selects an issued invoice of a client.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the employee may manage this client's messages (FR-02).
+  3. **System:** Shows the delivery history of the invoice (message type, channel, date, delivery status) and its pending scheduled reminders.
+  4. **Employee:** Selects a pending reminder and chooses a new date and time, and the channels to use (from those the client has consented to).
+  5. **System:** Checks that the new date is in the future and that the channels are consented to.
+  6. **System:** Stores the new date in the reminder schedule of the invoice (FR-13).
+  7. **System:** Logs the schedule change (FR-12).
+  8. **System:** Confirms the change to the employee.
 - **Extensions:**
   - **2a. The employee has no permission over this client:**
     - 2a1. UC-18 denies the operation and records the denied access (FR-02, NFR-04). The use case ends.
@@ -258,14 +243,14 @@
 - **Minimal Guarantee:** The global view is never shown to users without the Administrator or Superadministrator role (FR-02). Viewing never changes any data.
 - **Trigger:** The administrator requests the global view of clients or invoices.
 - **Main Success Scenario:**
-    1. **Administrator:** Requests the global view of clients and invoices.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
-    3. **System:** Retrieves all clients and invoices in record.
-    4. **System:** Shows clients with their assigned employee, subscription status and outstanding balance, and invoices with their status, amount and dates.
-    5. **Administrator:** Searches or filters (by client, assigned employee, location, business area, invoice status, recurring or one-off, date range).
-    6. **System:** Shows the matching results in under 1.5 seconds, even with more than 10,000 records (NFR-01).
-    7. **Administrator:** Selects a client or an invoice.
-    8. **System:** Shows its full details and offers the actions the administrator can perform on it (UC-02 to UC-05, or UC-07).
+  1. **Administrator:** Requests the global view of clients and invoices.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
+  3. **System:** Retrieves all clients and invoices in record.
+  4. **System:** Shows clients with their assigned employee, subscription status and outstanding balance, and invoices with their status, amount and dates.
+  5. **Administrator:** Searches or filters (by client, assigned employee, location, business area, invoice status, recurring or one-off, date range).
+  6. **System:** Shows the matching results in under 1.5 seconds, even with more than 10,000 records (NFR-01).
+  7. **Administrator:** Selects a client or an invoice.
+  8. **System:** Shows its full details and offers the actions the administrator can perform on it (UC-02 to UC-05, or UC-07).
 - **Extensions:**
   - **2a. The user does not have the Administrator role:**
     - 2a1. UC-18 denies access and records the attempt (NFR-04). The use case ends.
@@ -294,14 +279,14 @@
 - **Minimal Guarantee:** Client data is never left visible to an employee who is no longer assigned to that client. No pending task is lost because a client changed assignment.
 - **Trigger:** The administrator requests to change the assignment of one or more clients (from UC-06 or the client record).
 - **Main Success Scenario:**
-    1. **Administrator:** Selects one or more clients.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
-    3. **System:** Shows the current assignment of each selected client.
-    4. **Administrator:** Chooses the target employee and the action (assign or unassign).
-    5. **System:** Updates the assignments and the access scope of the employees involved (FR-02).
-    6. **System:** Moves the pending inbox tasks of the affected clients to the new assignee (FR-15).
-    7. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new assignments (FR-03).
-    8. **System:** Shows a message confirming the change.
+  1. **Administrator:** Selects one or more clients.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
+  3. **System:** Shows the current assignment of each selected client.
+  4. **Administrator:** Chooses the target employee and the action (assign or unassign).
+  5. **System:** Updates the assignments and the access scope of the employees involved (FR-02).
+  6. **System:** Moves the pending inbox tasks of the affected clients to the new assignee (FR-15).
+  7. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new assignments (FR-03).
+  8. **System:** Shows a message confirming the change.
 - **Extensions:**
   - **2a. The user does not have the Administrator role:**
     - 2a1. UC-18 denies the operation and records the attempt (NFR-04). The use case ends.
@@ -327,18 +312,18 @@
 - **Minimal Guarantee:** There is no partially imported record and no record duplicated by tax ID is ever stored.
 - **Trigger:** The administrator requests to import clients from a file.
 - **Main Success Scenario:**
-    1. **Administrator:** Requests to import clients from a CSV file.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
-    3. **System:** Describes the expected columns and their format.
-    4. **Administrator:** Provides the CSV file.
-    5. **System:** Checks the file structure (format, encoding, mandatory columns).
-    6. **System:** Checks each row (mandatory fields, tax ID and email formats) and looks for duplicates, both inside the file and against existing clients.
-    7. **System:** Shows a preview with the number of valid rows, the rows with errors, and the duplicates found.
-    8. **Administrator:** Confirms the import of the valid rows.
-    9. **System:** Stores the client records and assigns them to the chosen employee, if one was given (FR-04, FR-05).
-    10. **System:** Schedules monthly invoicing for the clients with recurring subscriptions (FR-06).
-    11. **System:** Executes **UC-17: Record Uneditable Audit Log** to record the import and its result (FR-03).
-    12. **System:** Shows a final report of the clients created and the rows skipped.
+  1. **Administrator:** Requests to import clients from a CSV file.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
+  3. **System:** Describes the expected columns and their format.
+  4. **Administrator:** Provides the CSV file.
+  5. **System:** Checks the file structure (format, encoding, mandatory columns).
+  6. **System:** Checks each row (mandatory fields, tax ID and email formats) and looks for duplicates, both inside the file and against existing clients.
+  7. **System:** Shows a preview with the number of valid rows, the rows with errors, and the duplicates found.
+  8. **Administrator:** Confirms the import of the valid rows.
+  9. **System:** Stores the client records and assigns them to the chosen employee, if one was given (FR-04, FR-05).
+  10. **System:** Schedules monthly invoicing for the clients with recurring subscriptions (FR-06).
+  11. **System:** Executes **UC-17: Record Uneditable Audit Log** to record the import and its result (FR-03).
+  12. **System:** Shows a final report of the clients created and the rows skipped.
 - **Extensions:**
   - **2a. The user does not have the Administrator role:**
     - 2a1. UC-18 denies the operation and records the attempt (NFR-04). The use case ends.
@@ -372,12 +357,12 @@
 - **Minimal Guarantee:** Financial figures are never shown to users without the Administrator or Superadministrator role (FR-02). The dashboard never changes any invoice or payment data.
 - **Trigger:** The administrator requests the financial dashboard.
 - **Main Success Scenario:**
-    1. **Administrator:** Requests the financial dashboard.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
-    3. **System:** Asks for the period type (weekly, monthly, quarterly or annual), and suggests the current month by default.
-    4. **Administrator:** Selects the period type and the period.
-    5. **System:** Calculates the figures for the period: amount invoiced, collected, outstanding, overdue, number of active subscriptions, and comparison with the previous period of the same type.
-    6. **System:** Shows the figures and their evolution over time.
+  1. **Administrator:** Requests the financial dashboard.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Administrator role (FR-02).
+  3. **System:** Asks for the period type (weekly, monthly, quarterly or annual), and suggests the current month by default.
+  4. **Administrator:** Selects the period type and the period.
+  5. **System:** Calculates the figures for the period: amount invoiced, collected, outstanding, overdue, number of active subscriptions, and comparison with the previous period of the same type.
+  6. **System:** Shows the figures and their evolution over time.
 - **Extensions:**
   - **2a. The user does not have the Administrator role:**
     - 2a1. UC-18 denies access and records the attempt (NFR-04). The use case ends.
@@ -405,12 +390,12 @@
 - **Minimal Guarantee:** The exported figures always match the figures shown in the dashboard for the same period. No invoice or payment data is changed.
 - **Trigger:** The administrator asks to export the dashboard (UC-09, extension point "Export").
 - **Main Success Scenario:**
-    1. **Administrator:** Requests to export the dashboard figures.
-    2. **System:** Asks for the export format (CSV or PDF).
-    3. **Administrator:** Selects the format.
-    4. **System:** Generates the export file with the period, the figures and the date the file was generated.
-    5. **System:** Makes the file available for download.
-    6. **System:** Returns control to UC-09.
+  1. **Administrator:** Requests to export the dashboard figures.
+  2. **System:** Asks for the export format (CSV or PDF).
+  3. **Administrator:** Selects the format.
+  4. **System:** Generates the export file with the period, the figures and the date the file was generated.
+  5. **System:** Makes the file available for download.
+  6. **System:** Returns control to UC-09.
 - **Extensions:**
   - **3a. The administrator cancels the export:**
     - 3a1. System returns to UC-09 without generating any file.
@@ -436,16 +421,16 @@
 - **Minimal Guarantee:** Global parameters can only be changed by the Superadministrator (FR-02). Invoices that have already been issued keep the terms they were issued with.
 - **Trigger:** The superadministrator requests to review or change the system configuration.
 - **Main Success Scenario:**
-    1. **Superadministrator:** Requests the global system configuration.
-    2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Superadministrator role (FR-02).
-    3. **System:** Shows the current values: default payment terms (5 days), monthly invoice date (day 1), and reminder schedule (day 3, day 5, then every 2–3 days while overdue).
-    4. **Superadministrator:** Changes one or more parameters.
-    5. **System:** Checks the new values (for example, the monthly date is between 1 and the specified month's days, payment terms are positive, and reminder days do not conflict).
-    6. **System:** Shows a summary of the changes and their effect: they apply to invoices and reminders generated from now on.
-    7. **Superadministrator:** Confirms the changes.
-    8. **System:** Stores the new values with their effective date (FR-06, FR-13).
-    9. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new values (FR-03).
-    10. **System:** Confirms that the configuration has been updated.
+  1. **Superadministrator:** Requests the global system configuration.
+  2. **System:** Executes **UC-18: Authenticate & Check User Permissions** to verify that the user has the Superadministrator role (FR-02).
+  3. **System:** Shows the current values: default payment terms (5 days), monthly invoice date (day 1), and reminder schedule (day 3, day 5, then every 2–3 days while overdue).
+  4. **Superadministrator:** Changes one or more parameters.
+  5. **System:** Checks the new values (for example, the monthly date is between 1 and the specified month's days, payment terms are positive, and reminder days do not conflict).
+  6. **System:** Shows a summary of the changes and their effect: they apply to invoices and reminders generated from now on.
+  7. **Superadministrator:** Confirms the changes.
+  8. **System:** Stores the new values with their effective date (FR-06, FR-13).
+  9. **System:** Executes **UC-17: Record Uneditable Audit Log** with the previous and new values (FR-03).
+  10. **System:** Confirms that the configuration has been updated.
 - **Extensions:**
   - **2a. The user does not have the Superadministrator role:**
     - 2a1. UC-18 denies access and records the attempt (NFR-04). The use case ends.
@@ -468,9 +453,9 @@
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - **Superadministrator:** Wants to control user permissions and ensure that employees have access to the functionality required for their responsibilities.
-  - **Employees and Administrators:** Want their assigned roles to provide the appropriate system permissions.
-  - **TurbineH:** Wants to prevent unauthorized access to sensitive financial information.
+  - _Superadministrator:_ Wants to control user permissions and ensure that employees have access to the functionality required for their responsibilities.
+  - _Employees and Administrators:_ Want their assigned roles to provide the appropriate system permissions.
+  - _TurbineH:_ Wants to prevent unauthorized access to sensitive financial information.
 - **Preconditions:**
   - The superadministrator is authenticated.
   - The superadministrator has permission to manage user roles.
@@ -513,9 +498,9 @@
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** User Goal
 - **Stakeholders & Interests:**
-  - **Superadministrator:** Wants to review modifications made to the system and identify the users responsible.
-  - **TurbineH:** Wants to maintain traceability of sensitive operations.
-  - **Employees and Administrators:** Want modifications to be accurately attributed to the responsible users.
+  - _Superadministrator:_ Wants to review modifications made to the system and identify the users responsible.
+  - _TurbineH:_ Wants to maintain traceability of sensitive operations.
+  - _Employees and Administrators:_ Want modifications to be accurately attributed to the responsible users.
 - **Preconditions:**
   - The superadministrator is authenticated.
   - The superadministrator has permission to access the audit log.
@@ -551,9 +536,9 @@
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - **TurbineH:** Wants all generated invoices to follow the company's corporate identity.
-  - **Employees:** Want invoice documents to be generated automatically without manual formatting.
-  - **Clients:** Want to receive clear, consistent invoice documents.
+  - _TurbineH:_ Wants all generated invoices to follow the company's corporate identity.
+  - _Employees:_ Want invoice documents to be generated automatically without manual formatting.
+  - _Clients:_ Want to receive clear, consistent invoice documents.
 - **Preconditions:**
   - An invoice has been issued.
   - The required invoice information is available.
@@ -596,9 +581,9 @@
 - **Scope:** TurbineH Invoicing & Subscription System
 - **Level:** Subfunction
 - **Stakeholders & Interests:**
-  - **TurbineH:** Wants invoices and payment reminders to be delivered efficiently.
-  - **Employees:** Want to track message delivery without manually contacting clients.
-  - **Clients:** Want to receive relevant financial communications through authorized channels.
+  - _TurbineH:_ Wants invoices and payment reminders to be delivered efficiently.
+  - _Employees:_ Want to track message delivery without manually contacting clients.
+  - _Clients:_ Want to receive relevant financial communications through authorized channels.
 - **Preconditions:**
   - An issued invoice exists.
   - The corresponding client has valid contact information for at least one permitted communication channel.

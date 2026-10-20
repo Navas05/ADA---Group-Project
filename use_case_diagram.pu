@@ -13,7 +13,7 @@ Admin <|-- SuperAdmin
 
 rectangle "TurbineH Invoicing & Subscription System" {
     usecase "UC-01: Access Daily Work Inbox" as UC02
-    usecase "UC-02: Modify / Pause / Cancel Subscriptions" as UC04
+    usecase "UC-02: Modify / Cancel Subscriptions" as UC04
     usecase "UC-03: Create or Issue One-Off Invoices" as UC05
     usecase "UC-04: Track Assigned Client Payment Statuses" as UC06
     usecase "UC-05: Manage Message Deliveries" as UC07
