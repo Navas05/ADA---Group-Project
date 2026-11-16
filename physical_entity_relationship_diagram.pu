@@ -1,16 +1,4 @@
 @startuml physical_entity_relationship_diagram
-' ============================================================
-'  TurbineH Invoicing & Subscription System
-'  Physical Entity-Relationship Diagram (MySQL 8)
-'  Submission 2 - Issue #13 / #24
-' ============================================================
-' Notation: crow's foot
-'   ||  exactly one      |o  zero or one
-'   |{  one or many      o{  zero or many
-' Stereotypes: <<PK>> primary key, <<FK>> foreign key,
-'              <<UQ>> unique, <<AI>> auto increment
-' Fields marked with * are NOT NULL
-' ============================================================
 
 hide circle
 skinparam linetype ortho
@@ -25,7 +13,7 @@ title TurbineH - Physical Entity-Relationship Diagram
 ' ---------------- Users and security ----------------
 
 entity "users" as users {
-  * user_id : INT <<PK>> <<AI>>
+  * user_id : INT <<PK>> 
   --
   * email : VARCHAR(100) <<UQ>>
   * password_hash : VARCHAR(255)
@@ -37,7 +25,7 @@ entity "users" as users {
 }
 
 entity "sessions" as sessions {
-  * session_id : INT <<PK>> <<AI>>
+  * session_id : INT <<PK>> 
   --
   * user_id : INT <<FK>>
   * token : VARCHAR(255) <<UQ>>
@@ -48,7 +36,7 @@ entity "sessions" as sessions {
 ' ---------------- Clients ----------------
 
 entity "clients" as clients {
-  * client_id : INT <<PK>> <<AI>>
+  * client_id : INT <<PK>> 
   --
   * company_name : VARCHAR(150)
   * tax_id : VARCHAR(20) <<UQ>>
@@ -64,7 +52,7 @@ entity "clients" as clients {
 }
 
 entity "client_assignments" as client_assignments {
-  * assignment_id : INT <<PK>> <<AI>>
+  * assignment_id : INT <<PK>> 
   --
   * client_id : INT <<FK>>
   * employee_id : INT <<FK>>
@@ -76,10 +64,10 @@ entity "client_assignments" as client_assignments {
 ' ---------------- Subscriptions and invoices ----------------
 
 entity "subscriptions" as subscriptions {
-  * subscription_id : INT <<PK>> <<AI>>
+  * subscription_id : INT <<PK>> 
   --
   * client_id : INT <<FK>> <<UQ>>
-  * monthly_fee : DECIMAL(10,2)
+  * monthly_fee : NUMERIC
   * status : ENUM('ACTIVE','PAUSED','CANCELLATION_PENDING_SETTLEMENT','CANCELLED')
   * start_date : DATE
   next_billing_date : DATE
@@ -87,7 +75,7 @@ entity "subscriptions" as subscriptions {
 }
 
 entity "invoices" as invoices {
-  * invoice_id : INT <<PK>> <<AI>>
+  * invoice_id : INT <<PK>> 
   --
   invoice_number : VARCHAR(20) <<UQ>>
   * client_id : INT <<FK>>
@@ -97,22 +85,22 @@ entity "invoices" as invoices {
   * status : ENUM('DRAFT','SCHEDULED','ISSUED','PENDING_DELIVERY','PAID','OVERDUE','CANCELLED')
   issue_date : DATE
   * due_date : DATE
-  * taxable_base : DECIMAL(10,2)
-  * vat_rate : DECIMAL(5,2) = 21.00
-  * vat_amount : DECIMAL(10,2)
-  * total_amount : DECIMAL(10,2)
+  * taxable_base : NUMERIC
+  * vat_rate : NUMERIC = 21.00
+  * vat_amount : NUMERIC
+  * total_amount : NUMERIC
   pdf_path : VARCHAR(255)
   * created_at : DATETIME
 }
 
 entity "invoice_lines" as invoice_lines {
-  * line_id : INT <<PK>> <<AI>>
+  * line_id : INT <<PK>> 
   --
   * invoice_id : INT <<FK>>
   * concept : VARCHAR(200)
-  * quantity : DECIMAL(10,2)
-  * unit_price : DECIMAL(10,2)
-  * line_total : DECIMAL(10,2)
+  * quantity : NUMERIC
+  * unit_price : NUMERIC
+  * line_total : NUMERIC
 }
 
 entity "invoice_sequences" as invoice_sequences {
@@ -124,11 +112,11 @@ entity "invoice_sequences" as invoice_sequences {
 ' ---------------- Payments ----------------
 
 entity "payments" as payments {
-  * payment_id : INT <<PK>> <<AI>>
+  * payment_id : INT <<PK>> 
   --
   invoice_id : INT <<FK>>
   * external_reference : VARCHAR(100) <<UQ>>
-  * amount : DECIMAL(10,2)
+  * amount : NUMERIC
   * payment_date : DATETIME
   * status : ENUM('MATCHED','UNMATCHED','AMOUNT_MISMATCH')
   * received_at : DATETIME
@@ -137,7 +125,7 @@ entity "payments" as payments {
 ' ---------------- Communications ----------------
 
 entity "reminders" as reminders {
-  * reminder_id : INT <<PK>> <<AI>>
+  * reminder_id : INT <<PK>> 
   --
   * invoice_id : INT <<FK>>
   * scheduled_at : DATETIME
@@ -147,7 +135,7 @@ entity "reminders" as reminders {
 }
 
 entity "message_deliveries" as message_deliveries {
-  * delivery_id : INT <<PK>> <<AI>>
+  * delivery_id : INT <<PK>> 
   --
   * invoice_id : INT <<FK>>
   reminder_id : INT <<FK>>
@@ -162,7 +150,7 @@ entity "message_deliveries" as message_deliveries {
 ' ---------------- Inbox, configuration and audit ----------------
 
 entity "inbox_tasks" as inbox_tasks {
-  * task_id : INT <<PK>> <<AI>>
+  * task_id : INT <<PK>> 
   --
   assigned_user_id : INT <<FK>>
   * client_id : INT <<FK>>
@@ -175,7 +163,7 @@ entity "inbox_tasks" as inbox_tasks {
 }
 
 entity "system_parameters" as system_parameters {
-  * parameter_id : INT <<PK>> <<AI>>
+  * parameter_id : INT <<PK>> 
   --
   * param_key : VARCHAR(50)
   * param_value : VARCHAR(255)
@@ -184,7 +172,7 @@ entity "system_parameters" as system_parameters {
 }
 
 entity "audit_log" as audit_log {
-  * log_id : BIGINT <<PK>> <<AI>>
+  * log_id : BIGINT <<PK>> 
   --
   user_id : INT <<FK>>
   user_role : VARCHAR(30)
@@ -200,8 +188,8 @@ entity "audit_log" as audit_log {
 
 note bottom of audit_log
   Append-only table (FR-03, UC-17):
-  triggers block UPDATE and DELETE and the
-  application DB user only has INSERT/SELECT.
+  UPDATE and DELETE blocked and the
+  user can only INSERT/SELECT.
 end note
 
 note bottom of client_assignments
