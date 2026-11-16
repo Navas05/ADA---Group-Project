@@ -1,0 +1,122 @@
+@startuml sequence_diagram_uc15
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-15: Send Invoices & Reminders
+'  Submission 2 - Issue #22 / #32
+'  Callers: InvoiceService (UC-03), Scheduler -> ReminderService
+'  (due reminder) or ReminderService (resend from UC-05).
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+autonumber
+
+title UC-15: Send Invoices & Reminders
+
+participant ":InvoiceService\nor :ReminderService" as Caller
+participant ":MessagingService" as Msg
+participant ":InvoiceRepository" as InvRepo
+entity "invoice:Invoice" as Inv
+entity "client:Client" as Cli
+participant ":ReminderService" as Rem
+participant "gateway:MessageChannelGateway\n(EmailGateway / WhatsAppGateway)" as Gw
+participant "External Messaging Services" as Ext <<external>>
+participant ":DeliveryRepository" as DelRepo
+control ":MessagingWebhookController" as Hook
+
+Caller -> Msg : send(invoiceId, messageType, reminderId)
+activate Msg
+
+== 1. Retrieve invoice and client (steps 1-2) ==
+
+Msg -> InvRepo : findById(invoiceId)
+activate InvRepo
+InvRepo --> Msg : invoice (or null)
+deactivate InvRepo
+
+alt invoice == null  (ext. 2a)
+  Msg --> Caller : failure("invoice not found")
+
+else invoice found
+
+  note over Msg, Inv : 2. Check that the message still applies (step 3)
+
+  Msg -> Inv : isPaid()
+  activate Inv
+  Inv --> Msg : paid
+  deactivate Inv
+
+  alt messageType == REMINDER and paid  (ext. 3a)
+    Msg -> Rem : cancelReminder(reminderId)
+    Msg --> Caller : result(CANCELLED)
+
+  else message applies
+
+    note over Msg, Cli : 3. Choose channels and prepare the message (steps 4-5)
+
+    Msg -> Inv : getClient()
+    Inv --> Msg : client
+    Msg -> Cli : getConsentedChannels()
+    activate Cli
+    Cli --> Msg : channels
+    deactivate Cli
+    note right of Msg
+      WhatsApp is only in the list if
+      client.whatsappConsent == true (ext. 4a)
+    end note
+
+    alt channels is empty  (ext. 4b)
+      Msg --> Caller : failure("no permitted channel")
+
+    else at least one channel
+
+      note over Msg, Ext : 4. Send through every channel (steps 6-8)
+
+      loop for each channel in channels
+        Msg -> Msg : buildMessage(invoice, messageType, channel)
+        note right of Msg : uses the approved corporate\ntemplate (NFR-03)
+        Msg -> Gw : send(recipient, message, invoice.pdfPath)
+        activate Gw
+        Gw -> Ext : deliver request (API / SMTP)
+        activate Ext
+        Ext --> Gw : response
+        deactivate Ext
+        Gw --> Msg : sendResult
+        deactivate Gw
+
+        alt sendResult.accepted and sendResult.confirmed
+          create entity "delivery:MessageDelivery" as Del
+          Msg -> Del : <<create>> MessageDelivery(invoice, channel, DELIVERED)
+        else sendResult.accepted, not confirmed yet  (ext. 7a)
+          Msg -> Del : <<create>> MessageDelivery(invoice, channel, PENDING_CONFIRMATION)
+        else rejected by the external service  (ext. 6a)
+          Msg -> Del : <<create>> MessageDelivery(invoice, channel, FAILED, error)
+        end
+
+        Msg -> DelRepo : save(delivery)
+      end
+
+      Msg --> Caller : deliveries
+    end
+  end
+end
+deactivate Msg
+
+== 5. Later: delivery confirmation (ext. 7a2) ==
+
+Ext -> Hook : receiveDeliveryStatus(externalMessageId, status)
+activate Hook
+Hook -> Msg : updateDeliveryStatus(externalMessageId, status)
+activate Msg
+Msg -> DelRepo : findByExternalId(externalMessageId)
+activate DelRepo
+DelRepo --> Msg : delivery
+deactivate DelRepo
+Msg -> Del : updateStatus(status)
+Msg -> DelRepo : save(delivery)
+Msg --> Hook
+deactivate Msg
+Hook --> Ext : 200 OK
+deactivate Hook
+
+@enduml
