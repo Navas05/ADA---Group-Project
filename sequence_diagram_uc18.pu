@@ -1,0 +1,159 @@
+@startuml sequence_diagram_uc18
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-18: Authenticate & Check User Permissions
+'  Submission 2 - Issue #22 / #33
+'  Included by every use case: <AnyController> is the controller
+'  of the use case that is being executed (e.g. InvoiceController).
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+autonumber
+
+title UC-18: Authenticate & Check User Permissions
+
+actor User
+boundary ":AnyView" as View
+boundary ":LoginView" as LoginView
+control ":AnyController" as Ctrl
+control ":AuthController" as AuthCtrl
+participant ":AuthService" as Auth
+participant ":SessionRepository" as SessRepo
+participant ":UserRepository" as UserRepo
+entity "user:User" as U
+participant ":ClientRepository" as ClientRepo
+participant ":AuditService" as Audit
+
+User -> View : request operation
+activate View
+View -> Ctrl : request(token, data)
+activate Ctrl
+Ctrl -> Auth : authorize(token, operation, clientId)
+activate Auth
+
+== 1. Check the session (step 1) ==
+
+Auth -> SessRepo : findByToken(token)
+activate SessRepo
+SessRepo --> Auth : session (or null)
+deactivate SessRepo
+
+alt session == null or session.isExpired()
+  Auth --> Ctrl : NotAuthenticated
+  Ctrl --> View : 401 Unauthorized
+  View -> LoginView : redirect to login
+  deactivate View
+  activate LoginView
+
+  note over User, Auth : 2. Sign in (steps 2-7)
+
+  LoginView --> User : ask for email and password
+  User -> LoginView : enter credentials and submit
+
+  opt mandatory fields empty  (ext. 3a)
+    LoginView --> User : flag empty fields (keeps entered data)
+  end
+
+  LoginView -> AuthCtrl : login(email, password)
+  activate AuthCtrl
+  AuthCtrl -> Auth : login(email, password)
+
+  Auth -> Auth : isCompanyEmail(email)
+
+  alt email not in @turbineh.com  (ext. 4a)
+    Auth -> Audit : record(null, "LOGIN_BLOCKED_DOMAIN", "users", null, null, email, DENIED)
+    Auth --> AuthCtrl : error("Only TurbineH accounts can sign in")
+    AuthCtrl --> LoginView : 403 Forbidden
+    LoginView --> User : show error
+
+  else company email
+    Auth -> UserRepo : findByEmail(email)
+    activate UserRepo
+    UserRepo --> Auth : user (or null)
+    deactivate UserRepo
+
+    Auth -> U : checkPassword(password)
+    activate U
+    U --> Auth : valid
+    deactivate U
+
+    alt user == null or valid == false  (ext. 5a)
+      opt user != null
+        Auth -> U : incrementFailedAttempts()
+        Auth -> UserRepo : save(user)
+      end
+      Auth -> Audit : record(user, "LOGIN_FAILED", "users", userId, null, null, FAILED)
+      Auth --> AuthCtrl : error("Invalid email or password")
+      AuthCtrl --> LoginView : 401 Unauthorized
+      LoginView --> User : "Invalid email or password"
+
+    else account deactivated or without role  (ext. 5b)
+      Auth -> Audit : record(user, "LOGIN_FAILED", "users", userId, null, "inactive", DENIED)
+      Auth --> AuthCtrl : error("Contact the Superadministrator")
+      AuthCtrl --> LoginView : 403 Forbidden
+      LoginView --> User : show message
+
+    else credentials valid
+      Auth -> U : resetFailedAttempts()
+      Auth -> UserRepo : save(user)
+      create entity "session:Session" as S
+      Auth -> S : <<create>> Session(user, now, now + sessionDuration)
+      Auth -> SessRepo : save(session)
+      Auth -> Audit : record(user, "LOGIN_SUCCESS", "sessions", sessionId, null, null, SUCCESS)
+      activate Audit
+      ref over Audit : UC-17: Record Uneditable Audit Log
+      Audit --> Auth
+      deactivate Audit
+      Auth --> AuthCtrl : session
+      AuthCtrl --> LoginView : 200 OK (token)
+      deactivate AuthCtrl
+      LoginView -> View : repeat the original request with the new token
+      deactivate LoginView
+      activate View
+      View -> Ctrl : request(token, data)
+      Ctrl -> Auth : authorize(token, operation, clientId)
+    end
+  end
+
+else active session  (ext. 1a: steps 2-7 are skipped)
+  Auth -> UserRepo : findById(session.userId)
+  activate UserRepo
+  UserRepo --> Auth : user
+  deactivate UserRepo
+end
+
+== 3. Check permissions (step 8) ==
+
+Auth -> Auth : getRequiredRole(operation)
+Auth -> U : hasRole(requiredRole)
+activate U
+U --> Auth : roleOk
+deactivate U
+
+opt operation on a specific client
+  Auth -> ClientRepo : findById(clientId)
+  activate ClientRepo
+  ClientRepo --> Auth : client
+  deactivate ClientRepo
+  Auth -> U : canAccessClient(client)
+  activate U
+  U --> Auth : scopeOk
+  deactivate U
+end
+
+alt roleOk == false or scopeOk == false  (ext. 8a)
+  Auth -> Audit : record(user, "ACCESS_DENIED", entity, clientId, null, operation, DENIED)
+  Auth --> Ctrl : AccessDenied
+  Ctrl --> View : 403 Forbidden
+  View --> User : "You do not have permission"
+else allowed
+  Auth --> Ctrl : user
+  deactivate Auth
+  Ctrl -> Ctrl : continue with the use case
+end
+
+deactivate Ctrl
+deactivate View
+
+@enduml

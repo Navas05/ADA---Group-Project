@@ -1,0 +1,161 @@
+@startuml sequence_diagram_uc03
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-03: Create or Issue One-Off Invoice
+'  Submission 2 - Issue #22 / #31
+'  Classes and methods: class_diagram.pu and
+'  class_diagram_application.pu
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+autonumber
+
+title UC-03: Create or Issue One-Off Invoice
+
+actor Employee
+boundary ":InvoiceView" as View
+control ":InvoiceController" as Ctrl
+participant ":AuthService" as Auth
+participant ":InvoiceService" as InvSrv
+participant ":ClientRepository" as ClientRepo
+participant ":ConfigurationService" as Config
+entity "invoice:OneOffInvoice" as Inv
+participant ":InvoiceRepository" as InvRepo
+participant ":PdfService" as Pdf
+participant ":MessagingService" as Msg
+participant ":ReminderService" as Rem
+participant ":InboxService" as Inbox
+participant ":AuditService" as Audit
+
+== 1. Create the invoice (steps 1-3) ==
+
+Employee -> View : clickNewOneOffInvoice(clientId)
+activate View
+View -> Ctrl : newOneOffInvoice(token, clientId)
+activate Ctrl
+
+Ctrl -> Auth : authorize(token, "CREATE_INVOICE", clientId)
+activate Auth
+ref over Auth : UC-18: Authenticate & Check User Permissions\n(see sequence_diagram_uc18.pu)
+Auth --> Ctrl : user
+deactivate Auth
+
+Ctrl -> InvSrv : prepareOneOffInvoice(user, clientId)
+activate InvSrv
+InvSrv -> ClientRepo : findById(clientId)
+activate ClientRepo
+ClientRepo --> InvSrv : client
+deactivate ClientRepo
+
+alt client.hasCompleteBillingData() == false  (ext. 3a)
+  InvSrv --> Ctrl : error(missing billing data)
+  Ctrl --> View : 422 Unprocessable (missing fields)
+  View --> Employee : show missing data
+else billing data complete
+  InvSrv -> Config : getIntParameter("DEFAULT_PAYMENT_TERMS_DAYS")
+  activate Config
+  Config --> InvSrv : paymentTermsDays
+  deactivate Config
+  create Inv
+  InvSrv -> Inv : <<create>> OneOffInvoice(client, today, today + paymentTermsDays)
+  InvSrv --> Ctrl : invoice
+  deactivate InvSrv
+  Ctrl --> View : invoiceDTO
+  View --> Employee : show prefilled invoice form
+end
+
+== 2. Enter lines and review (steps 4-6) ==
+
+loop until the data is valid  (ext. 5a)
+  Employee -> View : enterLines(lines, dates)
+  View -> Ctrl : previewInvoice(token, invoiceDTO)
+  Ctrl -> InvSrv : validateAndCalculate(invoice)
+  activate InvSrv
+  InvSrv -> Inv : addLine(concept, quantity, unitPrice)
+  InvSrv -> Inv : validate()
+  activate Inv
+  Inv --> InvSrv : errors
+  deactivate Inv
+  opt errors is empty
+    InvSrv -> Inv : calculateTotals()
+  end
+  InvSrv --> Ctrl : errors
+  deactivate InvSrv
+  Ctrl --> View : invoiceDTO + errors
+  View --> Employee : show summary or flag wrong fields
+end
+
+== 3. Confirm (steps 7-12) ==
+
+alt Employee saves as draft  (ext. 7a)
+  Employee -> View : clickSaveDraft()
+  View -> Ctrl : saveDraft(token, invoiceDTO)
+  Ctrl -> InvSrv : saveDraft(user, invoice)
+  activate InvSrv
+  InvSrv -> InvRepo : save(invoice)
+  InvSrv -> Audit : record(user, "INVOICE_DRAFT_CREATED", "invoices", id, null, invoiceJson, SUCCESS)
+  InvSrv --> Ctrl : invoice (DRAFT, no number)
+  deactivate InvSrv
+  Ctrl --> View : invoiceDTO
+  View --> Employee : draft saved
+
+else Employee confirms the issue
+  Employee -> View : clickIssue()
+  View -> Ctrl : issueInvoice(token, invoiceDTO)
+  Ctrl -> InvSrv : issueInvoice(user, invoice)
+  activate InvSrv
+
+  group transaction
+    InvSrv -> InvRepo : nextInvoiceNumber(year)
+    activate InvRepo
+    InvRepo --> InvSrv : number
+    deactivate InvRepo
+    InvSrv -> Inv : issue(number)
+    InvSrv -> InvRepo : save(invoice)
+  end
+
+  InvSrv -> Pdf : generateInvoicePdf(invoice)
+  activate Pdf
+  ref over Pdf : UC-14: Generate Corporate-Branded PDF
+  Pdf --> InvSrv : pdfPath (or failure)
+  deactivate Pdf
+
+  alt PDF generated
+    InvSrv -> Msg : sendInvoice(invoice)
+    activate Msg
+    ref over Msg : UC-15: Send Invoices & Reminders\n(see sequence_diagram_uc15.pu)
+    Msg --> InvSrv : deliveries
+    deactivate Msg
+
+    opt all deliveries FAILED  (ext. 10a)
+      InvSrv -> Inbox : createTask(user, client, invoice, DELIVERY_FAILED)
+    end
+
+    InvSrv -> Rem : scheduleReminders(invoice)
+    activate Rem
+    Rem --> InvSrv
+    deactivate Rem
+
+  else PDF failed  (ext. 9a)
+    InvSrv -> Inv : markAsPendingDelivery()
+    InvSrv -> InvRepo : save(invoice)
+    InvSrv -> Inbox : createTask(user, client, invoice, DELIVERY_FAILED)
+  end
+
+  InvSrv -> Audit : record(user, "INVOICE_ISSUED", "invoices", id, null, invoiceJson, SUCCESS)
+  activate Audit
+  ref over Audit : UC-17: Record Uneditable Audit Log
+  Audit --> InvSrv
+  deactivate Audit
+
+  InvSrv --> Ctrl : invoice + delivery status
+  deactivate InvSrv
+  Ctrl --> View : invoiceDTO
+  View --> Employee : show issued invoice and delivery status
+end
+
+deactivate Ctrl
+deactivate View
+
+@enduml
