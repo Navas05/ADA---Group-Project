@@ -1,0 +1,154 @@
+@startuml component_diagram
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Component Diagram - Layered architecture
+'  Submission 2 - Issue #21 / #29
+'  Rationale of the pattern: architecture.md
+' ============================================================
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+title TurbineH - UML Component Diagram (Layered Architecture)
+
+' ===================== Client tier =====================
+node "User device (desktop / tablet / mobile)" as Device {
+  component "Web Client\n(responsive SPA)" as UI
+}
+
+' ===================== Server tier =====================
+node "Application Server" as Server {
+
+  package "Presentation layer" {
+    component "REST API\n(Controllers)" as API
+    component "Webhook Endpoints" as Hooks
+  }
+
+  package "Business layer" {
+    component "Auth & Permissions\n(AuthService)" as AuthC
+    component "Invoicing\n(InvoiceService)" as InvC
+    component "Subscriptions\n(SubscriptionService)" as SubC
+    component "Clients\n(ClientService)" as CliC
+    component "Payments Sync\n(PaymentSyncService)" as PayC
+    component "Messaging\n(MessagingService)" as MsgC
+    component "Reminders\n(ReminderService)" as RemC
+    component "Inbox\n(InboxService)" as InbC
+    component "Dashboard & Export\n(DashboardService)" as DashC
+    component "Configuration\n(ConfigurationService)" as CfgC
+    component "PDF Generator\n(PdfService)" as PdfC
+    component "Audit Log\n(AuditService)" as AudC
+    component "Scheduler\n(daily / hourly jobs)" as SchC
+  }
+
+  package "Data access layer" {
+    component "Repositories" as Repo
+  }
+
+  package "Integration layer" {
+    component "Email Adapter\n(EmailGateway)" as EmailA
+    component "WhatsApp Adapter\n(WhatsAppGateway)" as WaA
+    component "Payment Adapter\n(StripePaymentGateway)" as StripeA
+  }
+}
+
+' ===================== Data tier =====================
+database "MySQL 8 Database" as DB
+folder "PDF storage" as Files
+
+' ===================== External systems =====================
+cloud "External services" {
+  component "Email Provider\n(SMTP)" as SMTP <<external>>
+  component "WhatsApp Business API" as WAPI <<external>>
+  component "Stripe\n(External Payment Service)" as Stripe <<external>>
+}
+
+' ===================== Provided interfaces =====================
+interface "IAuthorization" as IAuth
+interface "IAuditLog" as IAudit
+interface "IMessaging" as IMsg
+interface "IDataAccess" as IData
+interface "IMessageChannel" as IChannel
+interface "IPaymentGateway" as IPay
+
+AuthC -up- IAuth
+AudC -up- IAudit
+MsgC -up- IMsg
+Repo -up- IData
+EmailA -up- IChannel
+WaA -up- IChannel
+StripeA -up- IPay
+
+' ===================== Dependencies =====================
+
+' Client -> server
+UI --> API : HTTPS / JSON (REST)
+
+' Presentation -> business
+API ..> IAuth : every request (UC-18)
+API ..> InvC
+API ..> SubC
+API ..> CliC
+API ..> DashC
+API ..> CfgC
+API ..> InbC
+API ..> RemC
+Hooks ..> PayC : payment events (UC-16)
+Hooks ..> IMsg : delivery status (UC-15)
+
+' Business -> business
+InvC ..> PdfC
+InvC ..> IMsg
+InvC ..> RemC
+InvC ..> InbC
+InvC ..> CfgC
+RemC ..> IMsg
+PayC ..> RemC
+PayC ..> InbC
+CliC ..> InbC
+SchC ..> InvC : monthly invoices (FR-06)
+SchC ..> RemC : due reminders (FR-13)
+SchC ..> PayC : overdue check
+
+InvC ..> IAudit
+SubC ..> IAudit
+CliC ..> IAudit
+CfgC ..> IAudit
+PayC ..> IAudit
+AuthC ..> IAudit
+
+' Business -> data access
+AuthC ..> IData
+InvC ..> IData
+SubC ..> IData
+CliC ..> IData
+PayC ..> IData
+MsgC ..> IData
+RemC ..> IData
+InbC ..> IData
+DashC ..> IData
+CfgC ..> IData
+AudC ..> IData
+
+' Business -> integration
+MsgC ..> IChannel
+PayC ..> IPay
+
+' Data access -> data tier
+Repo --> DB : JDBC / SQL
+PdfC --> Files : store PDF
+
+' Integration -> external systems
+EmailA --> SMTP : SMTP
+WaA --> WAPI : HTTPS
+StripeA --> Stripe : HTTPS (API)
+Stripe --> Hooks : webhook (HTTPS)
+WAPI --> Hooks : status callback
+
+note bottom of Repo
+  Only this layer accesses the database.
+  The audit log repository only offers
+  insert / select (FR-03).
+end note
+
+@enduml
