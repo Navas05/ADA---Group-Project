@@ -120,11 +120,13 @@ Work on Submission 2 started on **29/10/2026** and the delivery is due on **18/1
 
 #### Board Status at Sprint Planning
 
-[Insert board screenshot – 01/11/2026]
+![Sprint 1 Planning - backlog](doc/img/sprint1_planning_table.png)
+![Sprint 1 Planning - board](doc/img/sprint1_planning_board.png)
 
 #### Board Status at Sprint Retrospective
 
-[Insert board screenshot – 08/11/2026]
+![Sprint 1 Retrospective - backlog](doc/img/sprint1_retrospective_table.png)
+![Sprint 1 Retrospective - board](doc/img/sprint1_retrospective_board.png)
 
 ### Sprint 2
 
@@ -147,11 +149,13 @@ Work on Submission 2 started on **29/10/2026** and the delivery is due on **18/1
 
 #### Board Status at Sprint Planning
 
-[Insert board screenshot – 08/11/2026]
+![Sprint 2 Planning - backlog](doc/img/sprint2_planning_table.png)
+![Sprint 2 Planning - board](doc/img/sprint2_planning_board.png)
 
 #### Board Status at Sprint Retrospective
 
-[Insert board screenshot – 18/11/2026]
+![Sprint 2 Retrospective - backlog](doc/img/sprint2_retrospective_table.png)
+![Sprint 2 Retrospective - board](doc/img/sprint2_retrospective_board.png)
 
 ## 5. Issues and Risks
 
