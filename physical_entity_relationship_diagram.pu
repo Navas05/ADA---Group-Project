@@ -1,0 +1,244 @@
+@startuml physical_entity_relationship_diagram
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  Physical Entity-Relationship Diagram (MySQL 8)
+'  Submission 2 - Issue #13 / #24
+' ============================================================
+' Notation: crow's foot
+'   ||  exactly one      |o  zero or one
+'   |{  one or many      o{  zero or many
+' Stereotypes: <<PK>> primary key, <<FK>> foreign key,
+'              <<UQ>> unique, <<AI>> auto increment
+' Fields marked with * are NOT NULL
+' ============================================================
+
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor #FDFDFD
+  BorderColor #444444
+}
+
+title TurbineH - Physical Entity-Relationship Diagram
+
+' ---------------- Users and security ----------------
+
+entity "users" as users {
+  * user_id : INT <<PK>> <<AI>>
+  --
+  * email : VARCHAR(100) <<UQ>>
+  * password_hash : VARCHAR(255)
+  * full_name : VARCHAR(100)
+  role : ENUM('EMPLOYEE','ADMINISTRATOR','SUPERADMINISTRATOR')
+  * active : BOOLEAN = TRUE
+  * failed_attempts : INT = 0
+  * created_at : DATETIME
+}
+
+entity "sessions" as sessions {
+  * session_id : INT <<PK>> <<AI>>
+  --
+  * user_id : INT <<FK>>
+  * token : VARCHAR(255) <<UQ>>
+  * created_at : DATETIME
+  * expires_at : DATETIME
+}
+
+' ---------------- Clients ----------------
+
+entity "clients" as clients {
+  * client_id : INT <<PK>> <<AI>>
+  --
+  * company_name : VARCHAR(150)
+  * tax_id : VARCHAR(20) <<UQ>>
+  address : VARCHAR(200)
+  city : VARCHAR(80)
+  business_area : VARCHAR(80)
+  * email : VARCHAR(100)
+  phone : VARCHAR(20)
+  * email_consent : BOOLEAN = TRUE
+  * whatsapp_consent : BOOLEAN = FALSE
+  * active : BOOLEAN = TRUE
+  * created_at : DATETIME
+}
+
+entity "client_assignments" as client_assignments {
+  * assignment_id : INT <<PK>> <<AI>>
+  --
+  * client_id : INT <<FK>>
+  * employee_id : INT <<FK>>
+  * assigned_by : INT <<FK>>
+  * assigned_at : DATETIME
+  unassigned_at : DATETIME
+}
+
+' ---------------- Subscriptions and invoices ----------------
+
+entity "subscriptions" as subscriptions {
+  * subscription_id : INT <<PK>> <<AI>>
+  --
+  * client_id : INT <<FK>> <<UQ>>
+  * monthly_fee : DECIMAL(10,2)
+  * status : ENUM('ACTIVE','PAUSED','CANCELLATION_PENDING_SETTLEMENT','CANCELLED')
+  * start_date : DATE
+  next_billing_date : DATE
+  end_date : DATE
+}
+
+entity "invoices" as invoices {
+  * invoice_id : INT <<PK>> <<AI>>
+  --
+  invoice_number : VARCHAR(20) <<UQ>>
+  * client_id : INT <<FK>>
+  subscription_id : INT <<FK>>
+  * created_by : INT <<FK>>
+  * type : ENUM('RECURRING','ONE_OFF')
+  * status : ENUM('DRAFT','SCHEDULED','ISSUED','PENDING_DELIVERY','PAID','OVERDUE','CANCELLED')
+  issue_date : DATE
+  * due_date : DATE
+  * taxable_base : DECIMAL(10,2)
+  * vat_rate : DECIMAL(5,2) = 21.00
+  * vat_amount : DECIMAL(10,2)
+  * total_amount : DECIMAL(10,2)
+  pdf_path : VARCHAR(255)
+  * created_at : DATETIME
+}
+
+entity "invoice_lines" as invoice_lines {
+  * line_id : INT <<PK>> <<AI>>
+  --
+  * invoice_id : INT <<FK>>
+  * concept : VARCHAR(200)
+  * quantity : DECIMAL(10,2)
+  * unit_price : DECIMAL(10,2)
+  * line_total : DECIMAL(10,2)
+}
+
+entity "invoice_sequences" as invoice_sequences {
+  * year : INT <<PK>>
+  --
+  * last_number : INT = 0
+}
+
+' ---------------- Payments ----------------
+
+entity "payments" as payments {
+  * payment_id : INT <<PK>> <<AI>>
+  --
+  invoice_id : INT <<FK>>
+  * external_reference : VARCHAR(100) <<UQ>>
+  * amount : DECIMAL(10,2)
+  * payment_date : DATETIME
+  * status : ENUM('MATCHED','UNMATCHED','AMOUNT_MISMATCH')
+  * received_at : DATETIME
+}
+
+' ---------------- Communications ----------------
+
+entity "reminders" as reminders {
+  * reminder_id : INT <<PK>> <<AI>>
+  --
+  * invoice_id : INT <<FK>>
+  * scheduled_at : DATETIME
+  * send_email : BOOLEAN = TRUE
+  * send_whatsapp : BOOLEAN = FALSE
+  * status : ENUM('PENDING','SENT','CANCELLED')
+}
+
+entity "message_deliveries" as message_deliveries {
+  * delivery_id : INT <<PK>> <<AI>>
+  --
+  * invoice_id : INT <<FK>>
+  reminder_id : INT <<FK>>
+  * message_type : ENUM('INVOICE','REMINDER')
+  * channel : ENUM('EMAIL','WHATSAPP')
+  * status : ENUM('PENDING_CONFIRMATION','DELIVERED','FAILED')
+  * sent_at : DATETIME
+  external_message_id : VARCHAR(100)
+  error_message : VARCHAR(255)
+}
+
+' ---------------- Inbox, configuration and audit ----------------
+
+entity "inbox_tasks" as inbox_tasks {
+  * task_id : INT <<PK>> <<AI>>
+  --
+  assigned_user_id : INT <<FK>>
+  * client_id : INT <<FK>>
+  invoice_id : INT <<FK>>
+  * task_type : ENUM('INVOICE_DUE','REMINDER_TODAY','OVERDUE','PAYMENT_CONFIRMED','DELIVERY_FAILED','RECONCILIATION','AMOUNT_MISMATCH')
+  * priority : TINYINT = 3
+  * status : ENUM('PENDING','RESOLVED')
+  * created_at : DATETIME
+  resolved_at : DATETIME
+}
+
+entity "system_parameters" as system_parameters {
+  * parameter_id : INT <<PK>> <<AI>>
+  --
+  * param_key : VARCHAR(50)
+  * param_value : VARCHAR(255)
+  * effective_from : DATETIME
+  * updated_by : INT <<FK>>
+}
+
+entity "audit_log" as audit_log {
+  * log_id : BIGINT <<PK>> <<AI>>
+  --
+  user_id : INT <<FK>>
+  user_role : VARCHAR(30)
+  * operation_type : VARCHAR(50)
+  affected_table : VARCHAR(50)
+  affected_record_id : INT
+  previous_value : TEXT
+  new_value : TEXT
+  * outcome : ENUM('SUCCESS','DENIED','FAILED')
+  ip_address : VARCHAR(45)
+  * created_at : DATETIME
+}
+
+note bottom of audit_log
+  Append-only table (FR-03, UC-17):
+  triggers block UPDATE and DELETE and the
+  application DB user only has INSERT/SELECT.
+end note
+
+note bottom of client_assignments
+  History of assignments (UC-07).
+  Active assignment: unassigned_at IS NULL
+  (max. one active row per client).
+end note
+
+note right of invoices
+  subscription_id NULL  => one-off invoice
+  invoice_number NULL   => draft (no number yet)
+end note
+
+' ---------------- Relationships ----------------
+
+users ||--o{ sessions : "opens"
+users ||--o{ client_assignments : "is assigned (employee_id)"
+users ||--o{ client_assignments : "assigns (assigned_by)"
+clients ||--o{ client_assignments : "has"
+
+clients ||--o| subscriptions : "has"
+clients ||--o{ invoices : "receives"
+subscriptions |o--o{ invoices : "generates"
+users ||--o{ invoices : "creates"
+invoices ||--o{ invoice_lines : "contains"
+
+invoices |o--o{ payments : "is paid by"
+
+invoices ||--o{ reminders : "schedules"
+invoices ||--o{ message_deliveries : "is sent in"
+reminders |o--o{ message_deliveries : "produces"
+
+users |o--o{ inbox_tasks : "receives"
+clients ||--o{ inbox_tasks : "refers to"
+invoices |o--o{ inbox_tasks : "refers to"
+
+users ||--o{ system_parameters : "updates"
+users |o--o{ audit_log : "performs"
+
+@enduml
