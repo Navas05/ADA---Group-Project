@@ -1,294 +1,388 @@
 @startuml class_diagram_application
 ' ============================================================
 '  TurbineH Invoicing & Subscription System
-'  UML Class Diagram - Application layers
-'  (controllers, services, repositories, integration)
+'  UML Class Diagram - Application layers (BCE + layers)
 '  Submission 2 - Issue #14 / #28
-'  Domain classes (Invoice, Client, User...) are detailed in
-'  class_diagram.pu and are shown here without members.
+'  Same structure as the course example (Medical Appointment):
+'  1) presentation  = boundaries (views)
+'  2) application   = controls (controllers)
+'  3) domain        = entities + interfaces (contracts)
+'  4) infrastructure = adapters that implement the interfaces
+'  The attributes and methods of the entities are detailed in
+'  class_diagram.pu, so here they are shown without members.
 ' ============================================================
 
+hide circle
 skinparam classAttributeIconSize 0
 skinparam shadowing false
-skinparam packageStyle rectangle
-hide empty members
-left to right direction
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #2B3E6A
+}
 
 title TurbineH - UML Class Diagram (Application Layers)
 
-' ============ Presentation layer: REST controllers ============
-package "Presentation (API controllers)" {
+' ==========================================
+' 1) PRESENTATION LAYER (BOUNDARIES)
+' ==========================================
+package "com.turbineh.presentation" {
 
-  class AuthController {
-    + login(email : String, password : String) : String
-    + logout(token : String) : void
-  }
+    class LoginView <<boundary>> {
+        + showLoginForm(): void
+        + onSignInClicked(email: String, password: String): void
+        + showError(message: String): void
+    }
 
-  class InvoiceController {
-    + newOneOffInvoice(token : String, clientId : int) : InvoiceDTO
-    + previewInvoice(token : String, data : InvoiceDTO) : InvoiceDTO
-    + issueInvoice(token : String, data : InvoiceDTO) : InvoiceDTO
-    + saveDraft(token : String, data : InvoiceDTO) : InvoiceDTO
-  }
+    class InboxView <<boundary>> {
+        + renderTasks(tasks: List<InboxTask>): void
+        + onTaskSelected(taskId: int): void
+    }
 
-  class MessagingWebhookController {
-    + receiveDeliveryStatus(externalMessageId : String, status : String) : void
-  }
+    class InvoiceView <<boundary>> {
+        + onNewInvoiceClicked(clientId: int): void
+        + renderInvoiceForm(invoice: OneOffInvoice): void
+        + onLinesEntered(lines: List<InvoiceLine>): void
+        + renderSummary(invoice: OneOffInvoice, errors: List<String>): void
+        + onIssueClicked(): void
+        + onSaveDraftClicked(): void
+        + renderDeliveryStatus(deliveries: List<MessageDelivery>): void
+    }
 
-  class PaymentWebhookController {
-    + receivePaymentEvent(event : PaymentEvent) : void
-  }
+    class SubscriptionView <<boundary>> {
+        + renderSubscription(subscription: Subscription): void
+        + onModifyClicked(newFee: BigDecimal): void
+        + onCancelClicked(): void
+    }
 
-  note "Other controllers (ClientController,\nSubscriptionController, DashboardController,\nConfigurationController, InboxController...)\nfollow the same structure." as N1
+    class PaymentTrackingView <<boundary>> {
+        + renderInvoices(invoices: List<Invoice>): void
+        + onFilterChanged(status: InvoiceStatus, clientId: int): void
+        + onInvoiceSelected(invoiceId: int): void
+    }
+
+    class MessageView <<boundary>> {
+        + renderHistory(deliveries: List<MessageDelivery>, reminders: List<Reminder>): void
+        + onRescheduleClicked(reminderId: int, date: LocalDateTime, channels: List<Channel>): void
+        + onCancelReminderClicked(reminderId: int): void
+        + onResendClicked(invoiceId: int): void
+    }
+
+    class AdministrationView <<boundary>> {
+        + renderClients(clients: List<Client>): void
+        + onAssignClicked(clientIds: List<Integer>, employeeId: int): void
+        + onImportClicked(csvFile: File): void
+        + renderDashboard(figures: Map<String, BigDecimal>): void
+        + onExportClicked(format: String): void
+    }
+
+    class SettingsView <<boundary>> {
+        + renderParameters(parameters: List<SystemParameter>): void
+        + onSaveParametersClicked(values: Map<String, String>): void
+        + onAssignRoleClicked(userId: int, role: Role): void
+        + renderAuditLog(entries: List<AuditLogEntry>): void
+    }
+
+    class PaymentWebhookEndpoint <<boundary>> {
+        + onPaymentEvent(reference: String, amount: BigDecimal, date: LocalDateTime, signature: String): void
+    }
 }
 
-' ======================= Business layer =======================
-package "Business logic (services)" {
+' ==========================================
+' 2) APPLICATION LOGIC LAYER (CONTROLS)
+' ==========================================
+package "com.turbineh.application" {
 
-  class AuthService {
-    - sessionDurationMinutes : int
-    + authorize(token : String, operation : String, clientId : Integer) : User
-    + login(email : String, password : String) : Session
-    + logout(token : String) : void
-    - isCompanyEmail(email : String) : boolean
-    - getRequiredRole(operation : String) : Role
-  }
+    class AuthController <<control>> {
+        - userRepository: UserRepository
+        - clientRepository: ClientRepository
+        - auditLog: AuditLogRepository
+        + login(email: String, password: String): Session
+        + checkPermission(user: User, operation: String, clientId: int): boolean
+        - isCompanyEmail(email: String): boolean
+        - getRequiredRole(operation: String): Role
+    }
 
-  class InvoiceService {
-    + prepareOneOffInvoice(user : User, clientId : int) : OneOffInvoice
-    + validateAndCalculate(invoice : Invoice) : List<String>
-    + issueInvoice(user : User, invoice : Invoice) : Invoice
-    + saveDraft(user : User, invoice : OneOffInvoice) : Invoice
-    + generateMonthlyInvoices(date : LocalDate) : void
-  }
+    class InboxController <<control>> {
+        - taskRepository: TaskRepository
+        + loadPendingTasks(user: User): List<InboxTask>
+        + resolveTask(user: User, taskId: int): void
+    }
 
-  class PdfService {
-    - templatePath : String
-    + generateInvoicePdf(invoice : Invoice) : String
-  }
+    class InvoiceController <<control>> {
+        - clientRepository: ClientRepository
+        - invoiceRepository: InvoiceRepository
+        - parameterRepository: ParameterRepository
+        - pdfGenerator: PdfGenerator
+        - auditLog: AuditLogRepository
+        + newOneOffInvoice(user: User, clientId: int): OneOffInvoice
+        + reviewInvoice(invoice: OneOffInvoice, lines: List<InvoiceLine>): List<String>
+        + issueInvoice(user: User, invoice: OneOffInvoice): List<MessageDelivery>
+        + saveDraft(user: User, invoice: OneOffInvoice): void
+        + generateMonthlyInvoices(today: LocalDate): void
+    }
 
-  class MessagingService {
-    + send(invoiceId : int, type : MessageType, reminderId : Integer) : List<MessageDelivery>
-    + sendInvoice(invoice : Invoice) : List<MessageDelivery>
-    + updateDeliveryStatus(externalMessageId : String, status : DeliveryStatus) : void
-    - buildMessage(invoice : Invoice, type : MessageType, channel : Channel) : Message
-  }
+    class SubscriptionController <<control>> {
+        - invoiceRepository: InvoiceRepository
+        - auditLog: AuditLogRepository
+        + loadSubscription(user: User, subscriptionId: int): Subscription
+        + modifySubscription(user: User, subscriptionId: int, newFee: BigDecimal): void
+        + cancelSubscription(user: User, subscriptionId: int): void
+    }
 
-  class ReminderService {
-    + scheduleReminders(invoice : Invoice) : void
-    + rescheduleReminder(user : User, reminderId : int, date : LocalDateTime, channels : List<Channel>) : void
-    + cancelReminder(reminderId : int) : void
-    + cancelPendingReminders(invoice : Invoice) : void
-    + processDueReminders(now : LocalDateTime) : void
-  }
+    class PaymentController <<control>> {
+        - paymentSource: PaymentGateway
+        - paymentRepository: PaymentRepository
+        - invoiceRepository: InvoiceRepository
+        - taskRepository: TaskRepository
+        - auditLog: AuditLogRepository
+        + getPaymentStatuses(user: User): List<Invoice>
+        + processPaymentEvent(reference: String, amount: BigDecimal, date: LocalDateTime, signature: String): void
+        + markOverdueInvoices(today: LocalDate): void
+    }
 
-  class AuditService {
-    + record(user : User, operation : String, entity : String, recordId : Integer, previous : String, newValue : String, outcome : Outcome) : void
-  }
+    class MessageController <<control>> {
+        - senders: List<MessageSender>
+        - messageRepository: MessageRepository
+        + sendInvoice(invoice: Invoice): List<MessageDelivery>
+        + scheduleReminders(invoice: Invoice): void
+        + sendDueReminders(now: LocalDateTime): void
+        + rescheduleReminder(user: User, reminderId: int, date: LocalDateTime, channels: List<Channel>): void
+        + cancelReminder(user: User, reminderId: int): void
+    }
 
-  class InboxService {
-    + getPendingTasks(user : User) : List<InboxTask>
-    + createTask(user : User, client : Client, invoice : Invoice, type : TaskType) : void
-    + moveTasks(client : Client, newUser : User) : void
-  }
+    class ClientAdminController <<control>> {
+        - clientRepository: ClientRepository
+        - taskRepository: TaskRepository
+        - auditLog: AuditLogRepository
+        + getAllClients(user: User): List<Client>
+        + assignClients(user: User, clientIds: List<Integer>, employeeId: int): void
+        + importClients(user: User, csvFile: File): int
+    }
 
-  class ConfigurationService {
-    + getIntParameter(key : String) : int
-    + updateParameters(user : User, values : Map<String, String>) : void
-  }
+    class DashboardController <<control>> {
+        - invoiceRepository: InvoiceRepository
+        + calculateFigures(user: User, periodType: String, period: String): Map<String, BigDecimal>
+        + exportFigures(user: User, figures: Map<String, BigDecimal>, format: String): File
+    }
 
-  class PaymentSyncService {
-    + processPaymentEvent(event : PaymentEvent) : void
-    + markOverdueInvoices(today : LocalDate) : void
-  }
+    class SettingsController <<control>> {
+        - parameterRepository: ParameterRepository
+        - userRepository: UserRepository
+        - auditLog: AuditLogRepository
+        + updateParameters(user: User, values: Map<String, String>): void
+        + assignRole(user: User, targetUserId: int, newRole: Role): void
+        + getAuditLog(user: User, page: int): List<AuditLogEntry>
+    }
 
-  class ClientService {
-    + assignClients(admin : User, clientIds : List<Integer>, employeeId : Integer) : void
-    + importCsv(admin : User, file : File) : ImportReport
-  }
-
-  class SubscriptionService {
-    + modifyTerms(user : User, subscriptionId : int, newFee : BigDecimal) : void
-    + cancel(user : User, subscriptionId : int) : void
-  }
-
-  class DashboardService {
-    + calculateFigures(user : User, periodType : String, period : String) : DashboardFigures
-    + export(figures : DashboardFigures, format : String) : File
-  }
-
-  class Scheduler <<scheduled job>> {
-    + runDaily() : void
-    + runEveryHour() : void
-  }
+    class SchedulerJob <<control>> {
+        + runDailyJobs(today: LocalDate): void
+    }
 }
 
-' ===================== Data access layer =====================
-package "Data access (repositories)" {
+' ==========================================
+' 3) CORE DOMAIN LAYER (ENTITIES & CONTRACTS)
+' ==========================================
+package "com.turbineh.domain" {
 
-  class UserRepository {
-    + findById(id : int) : User
-    + findByEmail(email : String) : User
-    + save(user : User) : void
-  }
+    ' --- Entities (members in class_diagram.pu) ---
+    class User
+    class Session
+    class Client
+    class Subscription
+    abstract class Invoice
+    class OneOffInvoice
+    class InvoiceLine
+    class Payment
+    class Reminder
+    class MessageDelivery
+    class InboxTask
+    class SystemParameter
+    class AuditLogEntry
 
-  class SessionRepository {
-    + findByToken(token : String) : Session
-    + save(session : Session) : void
-    + delete(token : String) : void
-  }
+    ' --- Domain interfaces: repositories (data storage) ---
+    interface UserRepository <<interface>> {
+        + findById(id: int): User
+        + findByEmail(email: String): User
+        + save(user: User): void
+    }
 
-  class ClientRepository {
-    + findById(id : int) : Client
-    + findByAssignedEmployee(userId : int) : List<Client>
-    + save(client : Client) : void
-  }
+    interface ClientRepository <<interface>> {
+        + findById(id: int): Client
+        + findAll(): List<Client>
+        + save(client: Client): void
+    }
 
-  class InvoiceRepository {
-    + findById(id : int) : Invoice
-    + save(invoice : Invoice) : void
-    + nextInvoiceNumber(year : int) : String
-  }
+    interface InvoiceRepository <<interface>> {
+        + findById(id: int): Invoice
+        + findByClients(clients: List<Client>): List<Invoice>
+        + findByPaymentReference(reference: String): Invoice
+        + nextInvoiceNumber(year: int): String
+        + save(invoice: Invoice): void
+        + findSubscription(id: int): Subscription
+        + saveSubscription(subscription: Subscription): void
+    }
 
-  class ReminderRepository {
-    + findById(id : int) : Reminder
-    + findDue(now : LocalDateTime) : List<Reminder>
-    + save(reminder : Reminder) : void
-  }
+    interface PaymentRepository <<interface>> {
+        + existsByReference(reference: String): boolean
+        + save(payment: Payment): void
+    }
 
-  class DeliveryRepository {
-    + save(delivery : MessageDelivery) : void
-    + findByExternalId(externalMessageId : String) : MessageDelivery
-  }
+    interface MessageRepository <<interface>> {
+        + findDueReminders(now: LocalDateTime): List<Reminder>
+        + saveReminder(reminder: Reminder): void
+        + saveDelivery(delivery: MessageDelivery): void
+    }
 
-  class AuditLogRepository {
-    + insert(entry : AuditLogEntry) : void
-    + findAll(page : int) : List<AuditLogEntry>
-  }
+    interface TaskRepository <<interface>> {
+        + findPendingByUser(user: User): List<InboxTask>
+        + save(task: InboxTask): void
+    }
 
-  class ParameterRepository {
-    + findCurrent(key : String) : SystemParameter
-    + save(parameter : SystemParameter) : void
-  }
+    interface ParameterRepository <<interface>> {
+        + findCurrent(key: String): SystemParameter
+        + save(parameter: SystemParameter): void
+    }
 
-  note "AuditLogRepository has no update()\nor delete() methods (FR-03)." as N2
-  AuditLogRepository .. N2
+    interface AuditLogRepository <<interface>> {
+        + insert(entry: AuditLogEntry): void
+        + findAll(page: int): List<AuditLogEntry>
+    }
+
+    ' --- Domain interfaces: external services ---
+    interface PaymentGateway <<interface>> {
+        + fetchPayments(since: LocalDateTime): List<Payment>
+        + verifySignature(signature: String): boolean
+    }
+
+    interface MessageSender <<interface>> {
+        + getChannel(): Channel
+        + send(client: Client, invoice: Invoice, type: MessageType): DeliveryStatus
+    }
+
+    interface PdfGenerator <<interface>> {
+        + generateInvoicePdf(invoice: Invoice): String
+    }
 }
 
-' ====================== Integration layer ======================
-package "Integration (external services)" {
+' ==========================================
+' 4) INFRASTRUCTURE LAYER (EXTERNAL ADAPTERS)
+' ==========================================
+package "com.turbineh.infrastructure" {
 
-  interface MessageChannelGateway {
-    + getChannel() : Channel
-    + send(recipient : String, message : Message, attachmentPath : String) : SendResult
-  }
+    class StripePaymentAdapter {
+        - apiUrl: String
+        - secretKey: String
+        + fetchPayments(since: LocalDateTime): List<Payment>
+        + verifySignature(signature: String): boolean
+    }
 
-  class EmailGateway {
-    - smtpHost : String
-  }
+    class EmailAdapter {
+        - smtpHost: String
+        + getChannel(): Channel
+        + send(client: Client, invoice: Invoice, type: MessageType): DeliveryStatus
+    }
 
-  class WhatsAppGateway {
-    - apiUrl : String
-    - apiKey : String
-  }
+    class WhatsAppAdapter {
+        - apiUrl: String
+        - apiKey: String
+        + getChannel(): Channel
+        + send(client: Client, invoice: Invoice, type: MessageType): DeliveryStatus
+    }
 
-  interface PaymentGateway {
-    + verifySignature(event : PaymentEvent) : boolean
-    + fetchPaymentsSince(date : LocalDateTime) : List<PaymentEvent>
-  }
+    class CorporatePdfAdapter {
+        - templatePath: String
+        + generateInvoicePdf(invoice: Invoice): String
+    }
 
-  class StripePaymentGateway {
-    - secretKey : String
-  }
-
-  class SendResult {
-    + accepted : boolean
-    + confirmed : boolean
-    + externalMessageId : String
-    + error : String
-  }
-
-  class Message {
-    + subject : String
-    + body : String
-  }
-
-  class PaymentEvent {
-    + reference : String
-    + amount : BigDecimal
-    + date : LocalDateTime
-    + signature : String
-  }
+    class MySqlDatabaseAdapter {
+        - connectionUrl: String
+    }
 }
 
-' ======================= Domain (summary) =======================
-package "Domain model (see class_diagram.pu)" {
-  class User
-  class Session
-  class Client
-  abstract class Invoice
-  class OneOffInvoice
-  class Reminder
-  class MessageDelivery
-  class AuditLogEntry
-  class InboxTask
-  class SystemParameter
-}
+' ==========================================
+' RELATIONSHIPS & TRAFFIC BETWEEN PACKAGES
+' ==========================================
 
-' ======================= Relationships =======================
+' Boundary to Control links
+LoginView .down.> AuthController
+InboxView .down.> InboxController
+InvoiceView .down.> InvoiceController
+SubscriptionView .down.> SubscriptionController
+PaymentTrackingView .down.> PaymentController
+MessageView .down.> MessageController
+AdministrationView .down.> ClientAdminController
+AdministrationView .down.> DashboardController
+SettingsView .down.> SettingsController
+PaymentWebhookEndpoint .down.> PaymentController
 
-' Interface realization (Strategy / Adapter for external services)
-MessageChannelGateway <|.. EmailGateway
-MessageChannelGateway <|.. WhatsAppGateway
-PaymentGateway <|.. StripePaymentGateway
+' Control to Control (included use cases and scheduled jobs)
+InvoiceController .right.> MessageController : sends invoice (UC-15)
+SchedulerJob ..> InvoiceController
+SchedulerJob ..> MessageController
+SchedulerJob ..> PaymentController
 
-' Controllers use services
-AuthController ..> AuthService
-InvoiceController ..> AuthService
-InvoiceController ..> InvoiceService
-MessagingWebhookController ..> MessagingService
-PaymentWebhookController ..> PaymentSyncService
+' Every controller checks permissions first (UC-18)
+InvoiceController ..> AuthController : checkPermission()
 
-' Services collaborate
-InvoiceService --> PdfService
-InvoiceService --> MessagingService
-InvoiceService --> ReminderService
-InvoiceService --> AuditService
-InvoiceService --> InboxService
-InvoiceService --> ConfigurationService
-AuthService --> AuditService
-MessagingService --> ReminderService
-MessagingService "1" o-- "1..*" MessageChannelGateway : channels
-PaymentSyncService --> PaymentGateway
-PaymentSyncService --> ReminderService
-PaymentSyncService --> InboxService
-PaymentSyncService --> AuditService
-ClientService --> AuditService
-ClientService --> InboxService
-SubscriptionService --> AuditService
-Scheduler ..> InvoiceService
-Scheduler ..> ReminderService
-Scheduler ..> PaymentSyncService
+' Control orchestrating Domain Entities
+AuthController ..> Session : <<create>>
+InvoiceController ..> OneOffInvoice : <<create>>
+MessageController ..> MessageDelivery : <<create>>
+MessageController ..> Reminder : <<create>>
+PaymentController ..> Payment : <<create>>
 
-' Services use repositories
-AuthService --> UserRepository
-AuthService --> SessionRepository
-AuthService --> ClientRepository
-InvoiceService --> InvoiceRepository
-InvoiceService --> ClientRepository
-MessagingService --> InvoiceRepository
-MessagingService --> DeliveryRepository
-ReminderService --> ReminderRepository
-AuditService --> AuditLogRepository
-ConfigurationService --> ParameterRepository
+' Infrastructure implementation (plugs into domain interfaces)
+PaymentGateway <|.. StripePaymentAdapter
+MessageSender <|.. EmailAdapter
+MessageSender <|.. WhatsAppAdapter
+PdfGenerator <|.. CorporatePdfAdapter
 
-' Services create / handle domain objects
-AuthService ..> Session : <<create>>
-InvoiceService ..> OneOffInvoice : <<create>>
-MessagingService ..> MessageDelivery : <<create>>
-AuditService ..> AuditLogEntry : <<create>>
-InboxService ..> InboxTask : <<create>>
-MessageChannelGateway ..> SendResult
-MessageChannelGateway ..> Message
+UserRepository <|.. MySqlDatabaseAdapter
+ClientRepository <|.. MySqlDatabaseAdapter
+InvoiceRepository <|.. MySqlDatabaseAdapter
+PaymentRepository <|.. MySqlDatabaseAdapter
+MessageRepository <|.. MySqlDatabaseAdapter
+TaskRepository <|.. MySqlDatabaseAdapter
+ParameterRepository <|.. MySqlDatabaseAdapter
+AuditLogRepository <|.. MySqlDatabaseAdapter
+
+' Domain structure needed by the controllers (full detail in class_diagram.pu)
+Invoice <|-- OneOffInvoice
+Invoice "1" *-- "1..*" InvoiceLine
+MessageController "1" o-- "1..*" MessageSender : senders
+
+' ==========================================
+' NOTES
+' ==========================================
+
+note bottom of MySqlDatabaseAdapter
+  One class implements all the repository
+  interfaces. AuditLogRepository has no
+  update() or delete() (FR-03).
+end note
+
+note bottom of AuthController
+  All the other controllers also call
+  checkPermission() before running their
+  use case. Only one arrow is drawn.
+end note
+
+note bottom of MessageController
+  Keeps one MessageSender per channel.
+  It only uses the channels the client
+  has consented to (FR-12).
+end note
 
 @enduml
