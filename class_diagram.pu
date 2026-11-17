@@ -1,13 +1,25 @@
 @startuml class_diagram
-' ============================================================
-'  TurbineH Invoicing & Subscription System
-'  UML Class Diagram - Domain model
-'  Submission 2 - Issue #14 / #27
-'  Names follow glossary.md
-' ============================================================
 
+hide circle
 skinparam classAttributeIconSize 0
-skinparam shadowing false
+skinparam shadowing true
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #2B3E6A
+}
+
 skinparam linetype ortho
 hide empty members
 
@@ -128,7 +140,7 @@ class Client {
   - active : boolean
   + hasCompleteBillingData() : boolean
   + getConsentedChannels() : List<Channel>
-  + getAssignedEmployee() : User
+  + getAssignedEmployees() : List<User>
   + getUnpaidInvoices() : List<Invoice>
 }
 
@@ -143,16 +155,16 @@ class ClientAssignment {
 
 class Subscription {
   - id : int
-  - monthlyFee : BigDecimal
+  - monthlyFee : Double
   - status : SubscriptionStatus
   - startDate : LocalDate
   - nextBillingDate : LocalDate
   - endDate : LocalDate
-  + modifyTerms(newFee : BigDecimal) : void
+  + modifyTerms(newFee : Double) : void
   + pause() : void
   + cancel(hasUnpaidInvoices : boolean) : void
   + completeCancellation() : void
-  + generateMonthlyInvoice(vatRate : BigDecimal, paymentTermsDays : int) : RecurringInvoice
+  + generateMonthlyInvoice(vatRate : Double, paymentTermsDays : int) : RecurringInvoice
 }
 
 abstract class Invoice {
@@ -161,12 +173,12 @@ abstract class Invoice {
   - status : InvoiceStatus
   - issueDate : LocalDate
   - dueDate : LocalDate
-  - taxableBase : BigDecimal
-  - vatRate : BigDecimal
-  - vatAmount : BigDecimal
-  - totalAmount : BigDecimal
+  - taxableBase : Double
+  - vatRate : Double
+  - vatAmount : Double
+  - totalAmount : Double
   - pdfPath : String
-  + addLine(concept : String, quantity : BigDecimal, unitPrice : BigDecimal) : void
+  + addLine(concept : String, quantity : Double, unitPrice : Double) : void
   + calculateTotals() : void
   + validate() : List<String>
   + issue(number : String) : void
@@ -175,7 +187,7 @@ abstract class Invoice {
   + markAsOverdue() : void
   + isPaid() : boolean
   + getClient() : Client
-  + getPendingAmount() : BigDecimal
+  + getPendingAmount() : Double
 }
 
 class RecurringInvoice {
@@ -190,9 +202,9 @@ class OneOffInvoice {
 
 class InvoiceLine {
   - concept : String
-  - quantity : BigDecimal
-  - unitPrice : BigDecimal
-  + getTotal() : BigDecimal
+  - quantity : Double
+  - unitPrice : Double
+  + getTotal() : Double
 }
 
 ' ---------------- Payments ----------------
@@ -200,7 +212,7 @@ class InvoiceLine {
 class Payment {
   - id : int
   - externalReference : String
-  - amount : BigDecimal
+  - amount : Double
   - paymentDate : LocalDateTime
   - status : PaymentStatus
   + matches(invoice : Invoice) : boolean
@@ -274,31 +286,30 @@ Invoice <|-- RecurringInvoice
 Invoice <|-- OneOffInvoice
 
 ' Composition (the part cannot exist without the whole)
-Invoice "1" *-- "1..*" InvoiceLine : contains >
-User "1" *-- "0..*" Session : opens >
+Invoice "1" *-- "1..*" InvoiceLine : -lines
+User "1" *-- "0..*" Session : -sessions
 
 ' Associations with multiplicities
-Client "1" -- "0..*" ClientAssignment : has >
-User "1" -- "0..*" ClientAssignment : is responsible in >
+Client "1" --> "0..*" ClientAssignment : -assignments
+User "1" <-- "0..*" ClientAssignment : -user
 
-Client "1" -- "0..1" Subscription : has >
-Subscription "1" -- "0..*" RecurringInvoice : generates >
-Client "1" -- "0..*" Invoice : receives >
-User "1" -- "0..*" OneOffInvoice : creates >
+Client "1" --> "0..1" Subscription : -subscription
+Subscription "1" --> "0..*" RecurringInvoice : -invoices
+Client "1" --> "0..*" Invoice : -invoices
+User "1" <-- "0..*" OneOffInvoice : -createdBy
 
-Invoice "0..1" -- "0..*" Payment : is paid by >
+Invoice "0..1" --> "0..*" Payment : -payments
 
 ' Aggregation (reminders and deliveries belong to the invoice history)
-Invoice "1" o-- "0..*" Reminder : schedules >
-Invoice "1" o-- "0..*" MessageDelivery : delivery log >
-Reminder "0..1" -- "0..*" MessageDelivery : produces >
+Invoice "1" o-- "0..*" Reminder : -reminders
+Reminder "0..1" --> "0..*" MessageDelivery : -deliveries
 
-User "0..1" -- "0..*" InboxTask : receives >
-InboxTask "0..*" -- "1" Client : about >
-InboxTask "0..*" -- "0..1" Invoice : about >
+User "0..1" --> "0..*" InboxTask : -tasks
+InboxTask "0..*" --> "1" Client : -associatedClient
+InboxTask "0..*" --> "0..1" Invoice : -associatedInvoice
 
-User "1" -- "0..*" SystemParameter : updates >
-User "0..1" -- "0..*" AuditLogEntry : performs >
+User "1" <-- "0..*" SystemParameter : -updatedBy
+User "0..1" --> "0..*" AuditLogEntry : -logs
 
 ' Enumeration usage (kept light to avoid clutter)
 User ..> Role
