@@ -65,7 +65,7 @@ package "com.turbineh.presentation" {
 
     class SubscriptionView <<boundary>> {
         + renderSubscription(subscription: Subscription): void
-        + onModifyClicked(newFee: BigDecimal): void
+        + onModifyClicked(newFee: Double): void
         + onCancelClicked(): void
     }
 
@@ -86,7 +86,7 @@ package "com.turbineh.presentation" {
         + renderClients(clients: List<Client>): void
         + onAssignClicked(clientIds: List<Integer>, employeeId: int): void
         + onImportClicked(csvFile: File): void
-        + renderDashboard(figures: Map<String, BigDecimal>): void
+        + renderDashboard(figures: Map<String, Double>): void
         + onExportClicked(format: String): void
     }
 
@@ -98,7 +98,7 @@ package "com.turbineh.presentation" {
     }
 
     class PaymentWebhookEndpoint <<boundary>> {
-        + onPaymentEvent(reference: String, amount: BigDecimal, date: LocalDateTime, signature: String): void
+        + onPaymentEvent(reference: String, amount: Double, date: LocalDateTime, signature: String): void
     }
 }
 
@@ -140,7 +140,7 @@ package "com.turbineh.application" {
         - invoiceRepository: InvoiceRepository
         - auditLog: AuditLogRepository
         + loadSubscription(user: User, subscriptionId: int): Subscription
-        + modifySubscription(user: User, subscriptionId: int, newFee: BigDecimal): void
+        + modifySubscription(user: User, subscriptionId: int, newFee: Double): void
         + cancelSubscription(user: User, subscriptionId: int): void
     }
 
@@ -151,7 +151,7 @@ package "com.turbineh.application" {
         - taskRepository: TaskRepository
         - auditLog: AuditLogRepository
         + getPaymentStatuses(user: User): List<Invoice>
-        + processPaymentEvent(reference: String, amount: BigDecimal, date: LocalDateTime, signature: String): void
+        + processPaymentEvent(reference: String, amount: Double, date: LocalDateTime, signature: String): void
         + markOverdueInvoices(today: LocalDate): void
     }
 
@@ -176,8 +176,8 @@ package "com.turbineh.application" {
 
     class DashboardController <<control>> {
         - invoiceRepository: InvoiceRepository
-        + calculateFigures(user: User, periodType: String, period: String): Map<String, BigDecimal>
-        + exportFigures(user: User, figures: Map<String, BigDecimal>, format: String): File
+        + calculateFigures(user: User, periodType: String, period: String): Map<String, Double>
+        + exportFigures(user: User, figures: Map<String, Double>, format: String): File
     }
 
     class SettingsController <<control>> {

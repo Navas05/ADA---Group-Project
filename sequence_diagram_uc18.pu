@@ -70,6 +70,7 @@ deactivate U
 
 alt valid
     Ctrl -> U : resetFailedAttempts()
+    Ctrl -> Repo : save(user)
     create participant "session : Session" as S <<entity>>
     Ctrl -> S : <<create>> (user, expiresAt)
     Ctrl -> Audit : insert(AuditLogEntry(user, "LOGIN_SUCCESS"))
@@ -78,6 +79,7 @@ alt valid
     View --> User : shows the workspace (role and assigned clients loaded)
 else wrong email domain or wrong password (ext. 4a / 5a)
     Ctrl -> U : incrementFailedAttempts()
+    Ctrl -> Repo : save(user)
     Ctrl -> Audit : insert(AuditLogEntry(user, "LOGIN_FAILED"))
     Ctrl --> View : return error
     View --> User : shows "Invalid email or password"
@@ -122,6 +124,7 @@ participant "user : User" as U <<entity>>
 participant "auditLog : AuditLogRepository" as Audit <<interface>>
 
 User -> View : clicks 'New one-off invoice' for a client
+note right : Example of a use case that requires permission checking (UC-03).
 activate View
 View -> UCCtrl : newOneOffInvoice(user, clientId)
 activate UCCtrl
