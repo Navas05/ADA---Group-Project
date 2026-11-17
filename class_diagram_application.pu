@@ -14,7 +14,7 @@
 
 hide circle
 skinparam classAttributeIconSize 0
-skinparam shadowing true
+skinparam shadowing false
 
 skinparam class {
     BackgroundColor #FFFFFF
