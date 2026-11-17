@@ -1,0 +1,165 @@
+@startuml sequence_diagram_uc18_1
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-18: Authenticate & Check User Permissions
+'  Submission 2 - Issue #22 / #33
+'  Two sequences (like the course example):
+'   Sequence 1 - Sign in (UC-18 steps 2-7)
+'   Sequence 2 - Check permissions (UC-18 step 8)
+'  Classes and methods: class_diagram.pu and
+'  class_diagram_application.pu
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam participant {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+}
+skinparam sequence {
+    ArrowColor #2B3E6A
+    LifeLineBorderColor #2B3E6A
+}
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+}
+autonumber
+
+title UC-18 - Sequence 1: Sign In
+
+actor "Employee (User)" as User
+participant "loginView : LoginView" as View <<boundary>>
+participant "authCtrl : AuthController" as Ctrl <<control>>
+participant "userRepo : UserRepository" as Repo <<interface>>
+participant "dbAdapter : MySqlDatabaseAdapter" as Db <<infrastructure>>
+participant "auditLog : AuditLogRepository" as Audit <<interface>>
+
+note over User, Ctrl
+  Step 1: if the employee already has a session and
+  session.isExpired() is false, steps 2-7 are skipped (ext. 1a).
+end note
+
+User -> View : enters email and password, clicks 'Sign in'
+activate View
+View -> Ctrl : login(email, password)
+activate Ctrl
+
+Ctrl -> Ctrl : isCompanyEmail(email)
+note right
+  Step 4: only @turbineh.com accounts.
+  Otherwise the attempt is rejected
+  without checking the password (ext. 4a).
+end note
+
+Ctrl -> Repo : findByEmail(email)
+activate Repo
+Repo -> Db : findByEmail(email)
+activate Db
+create participant "user : User" as U <<entity>>
+Db -> U : <<create>>
+Db --> Repo : return user
+deactivate Db
+Repo --> Ctrl : return user
+deactivate Repo
+
+Ctrl -> U : checkPassword(password)
+activate U
+U --> Ctrl : return valid
+deactivate U
+
+alt valid
+    Ctrl -> U : resetFailedAttempts()
+    Ctrl -> Repo : save(user)
+    create participant "session : Session" as S <<entity>>
+    Ctrl -> S : <<create>> (user, expiresAt)
+    Ctrl -> Audit : insert(AuditLogEntry(user, "LOGIN_SUCCESS"))
+    note right : UC-17
+    Ctrl --> View : return session
+    View --> User : shows the workspace (role and assigned clients loaded)
+else wrong email domain or wrong password (ext. 4a / 5a)
+    Ctrl -> U : incrementFailedAttempts()
+    Ctrl -> Repo : save(user)
+    Ctrl -> Audit : insert(AuditLogEntry(user, "LOGIN_FAILED"))
+    Ctrl --> View : return error
+    View --> User : shows "Invalid email or password"
+end
+
+deactivate Ctrl
+deactivate View
+
+@enduml
+
+@startuml sequence_diagram_uc18_2
+' ============================================================
+'  UC-18 - Sequence 2: Check permissions (step 8)
+'  Example: the employee starts UC-03 (new one-off invoice).
+'  Every controller calls checkPermission() in the same way.
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam participant {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+}
+skinparam sequence {
+    ArrowColor #2B3E6A
+    LifeLineBorderColor #2B3E6A
+}
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+}
+autonumber
+
+title UC-18 - Sequence 2: Check Permissions
+
+actor "Employee (User)" as User
+participant "invoiceView : InvoiceView" as View <<boundary>>
+participant "invoiceCtrl : InvoiceController" as UCCtrl <<control>>
+participant "authCtrl : AuthController" as Ctrl <<control>>
+participant "clientRepo : ClientRepository" as CRepo <<interface>>
+participant "user : User" as U <<entity>>
+participant "auditLog : AuditLogRepository" as Audit <<interface>>
+
+User -> View : clicks 'New one-off invoice' for a client
+note right : Example of a use case that requires permission checking (UC-03).
+activate View
+View -> UCCtrl : newOneOffInvoice(user, clientId)
+activate UCCtrl
+
+UCCtrl -> Ctrl : checkPermission(user, "CREATE_INVOICE", clientId)
+activate Ctrl
+
+Ctrl -> Ctrl : getRequiredRole("CREATE_INVOICE")
+Ctrl -> U : hasRole(requiredRole)
+activate U
+U --> Ctrl : return roleOk
+deactivate U
+
+Ctrl -> CRepo : findById(clientId)
+activate CRepo
+CRepo --> Ctrl : return client
+deactivate CRepo
+
+Ctrl -> U : canAccessClient(client)
+activate U
+U --> Ctrl : return scopeOk
+deactivate U
+
+alt roleOk and scopeOk
+    Ctrl --> UCCtrl : return true
+    UCCtrl -> UCCtrl : continues with UC-03 (step 3)
+else not allowed (ext. 8a)
+    Ctrl -> Audit : insert(AuditLogEntry(user, "ACCESS_DENIED"))
+    Ctrl --> UCCtrl : return false
+    UCCtrl --> View : access denied
+    View --> User : shows "You do not have permission"
+end
+
+deactivate Ctrl
+deactivate UCCtrl
+deactivate View
+
+@enduml

@@ -1,0 +1,255 @@
+@startuml component_diagram
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam package {
+    BackgroundColor #F5F7FA
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam interface {
+    BorderColor #2B3E6A
+    BackgroundColor #FFFFFF
+}
+
+skinparam arrow {
+    Color #2B3E6A
+}
+
+skinparam ranksep 300
+
+title TurbineH - UML Component Diagram (Layered Architecture)
+
+' ==========================================
+' 1. PRESENTATION LAYER
+' ==========================================
+
+package "Presentation Layer" {
+    component "Login UI" as LoginUI <<boundary>>
+    component "Employee Workspace UI" as WorkspaceUI <<boundary>>
+    component "Administration UI" as AdminUI <<boundary>>
+    component "Superadministrator Settings UI" as SettingsUI <<boundary>>
+    component "Payment Webhook Endpoint" as WebhookEP <<boundary>>
+}
+
+' ==========================================
+' 2. APPLICATION LAYER
+' ==========================================
+
+package "Application Layer" {
+    component "Authentication" as Auth <<control>>
+    component "Inbox Management" as Inbox <<control>>
+    component "Invoicing" as Invoicing <<control>>
+    component "Payment Tracking" as Payments <<control>>
+    component "Message Management" as Messages <<control>>
+    component "Client Administration" as ClientAdmin <<control>>
+    component "Financial Dashboard" as Dashboard <<control>>
+    component "System Settings" as Settings <<control>>
+    component "Scheduled Jobs" as Jobs <<control>>
+}
+
+' ==========================================
+' 3. DOMAIN LAYER
+' ==========================================
+
+package "Domain Layer" {
+    component "Users & Sessions" as UserDomain
+    component "Clients & Assignments" as ClientDomain
+    component "Subscriptions & Invoices" as InvoiceDomain
+    component "Payments" as PaymentDomain
+    component "Reminders & Deliveries" as MessageDomain
+    component "Inbox Tasks" as TaskDomain
+    component "System Parameters" as ParameterDomain
+    component "Audit Log" as AuditDomain
+
+    interface "Payment Source" as PaymentPort
+    interface "Message Sending" as MessagePort
+    interface "PDF Generation" as PdfPort
+    interface "Data Storage" as StoragePort
+}
+
+' ==========================================
+' 4. INFRASTRUCTURE LAYER
+' ==========================================
+
+package "Infrastructure Layer" {
+    component "Stripe Payment Adapter" as StripeAdapter
+    component "Email Adapter" as EmailAdapter
+    component "WhatsApp Adapter" as WhatsAppAdapter
+    component "Corporate PDF Adapter" as PdfAdapter
+    component "MySQL Database Adapter" as DbAdapter
+}
+
+' ==========================================
+' 5. EXTERNAL SYSTEMS
+' ==========================================
+
+component "Stripe\n(External Payment Service)" as StripeSystem <<external>>
+component "Email Service / SMTP" as EmailSystem <<external>>
+component "WhatsApp Business API" as WhatsAppSystem <<external>>
+database "MySQL Database" as MySQL
+
+' ==========================================
+' INDEPENDENT INTERFACES (CONTRACTS)
+' ==========================================
+
+' Offered by the application layer to the presentation layer
+interface "Authentication" as AuthI
+interface "Inbox Management" as InboxI
+interface "Invoicing" as InvoicingI
+interface "Payment Tracking" as PaymentsI
+interface "Message Management" as MessagesI
+interface "Client Administration" as ClientAdminI
+interface "Financial Dashboard" as DashboardI
+interface "System Settings" as SettingsI
+
+' Offered by the domain layer to the application layer
+interface UserAPI
+interface ClientAPI
+interface InvoiceAPI
+interface PaymentAPI
+interface MessageAPI
+interface TaskAPI
+interface ParameterAPI
+interface AuditAPI
+
+' Offered by the external systems
+interface StripeAPI
+interface SendEmail
+interface WhatsAppAPI
+interface SQL
+
+' ==========================================
+' CONNECTIONS AND DEPENDENCIES
+' ==========================================
+
+' Presentation -> Application interfaces
+LoginUI ..( AuthI : <<requires>>
+WorkspaceUI ..( InboxI : <<requires>>
+WorkspaceUI ..( InvoicingI : <<requires>>
+WorkspaceUI ..( PaymentsI : <<requires>>
+WorkspaceUI ..( MessagesI : <<requires>>
+AdminUI ..( ClientAdminI : <<requires>>
+AdminUI ..( DashboardI : <<requires>>
+SettingsUI ..( SettingsI : <<requires>>
+WebhookEP ..( PaymentsI : payment events
+
+AuthI -- Auth : <<provides>>
+InboxI -- Inbox : <<provides>>
+InvoicingI -- Invoicing : <<provides>>
+PaymentsI -- Payments : <<provides>>
+MessagesI -- Messages : <<provides>>
+ClientAdminI -- ClientAdmin : <<provides>>
+DashboardI -- Dashboard : <<provides>>
+SettingsI -- Settings : <<provides>>
+
+' Application -> Application (included use cases and automatic jobs)
+Invoicing ..( MessagesI : send invoice (UC-15)
+Jobs ..( InvoicingI : monthly invoices (FR-06)
+Jobs ..( MessagesI : due reminders (FR-13)
+Jobs ..( PaymentsI : overdue check (UC-16)
+
+' Application -> Domain
+Auth ..( UserAPI : sign in / check permissions
+Auth ..( ClientAPI : client scope
+Inbox ..( TaskAPI : load / resolve tasks
+Invoicing ..( ClientAPI : client tax data
+Invoicing ..( InvoiceAPI : create / issue / modify
+Invoicing ..( ParameterAPI : payment terms
+Payments ..( InvoiceAPI : update status
+Payments ..( PaymentAPI : register payments
+Payments ..( TaskAPI : notify employee
+Messages ..( MessageAPI : send / reschedule
+ClientAdmin ..( ClientAPI : view / assign / import
+ClientAdmin ..( TaskAPI : move tasks
+Dashboard ..( InvoiceAPI : figures
+Settings ..( ParameterAPI : configure
+Settings ..( UserAPI : assign roles
+
+UserAPI -- UserDomain
+ClientAPI -- ClientDomain
+InvoiceAPI -- InvoiceDomain
+PaymentAPI -- PaymentDomain
+MessageAPI -- MessageDomain
+TaskAPI -- TaskDomain
+ParameterAPI -- ParameterDomain
+AuditAPI -- AuditDomain
+
+' Audit log (UC-17): every sensitive operation is recorded
+Auth ..( AuditAPI : record
+Invoicing ..( AuditAPI : record
+Payments ..( AuditAPI : record
+ClientAdmin ..( AuditAPI : record
+Settings ..( AuditAPI : record / read log
+
+' Domain contracts (implemented by the infrastructure layer)
+Payments ..( PaymentPort : query payments
+Messages ..( MessagePort : send message
+Invoicing ..( PdfPort : generate PDF (UC-14)
+
+UserDomain ..( StoragePort
+ClientDomain ..( StoragePort
+InvoiceDomain ..( StoragePort
+PaymentDomain ..( StoragePort
+MessageDomain ..( StoragePort
+TaskDomain ..( StoragePort
+ParameterDomain ..( StoragePort
+AuditDomain ..( StoragePort : load / save
+
+' Infrastructure implementations
+PaymentPort -- StripeAdapter
+MessagePort -- EmailAdapter
+MessagePort -- WhatsAppAdapter
+PdfPort -- PdfAdapter
+StoragePort -- DbAdapter
+
+StripeAdapter ..( StripeAPI
+EmailAdapter ..( SendEmail
+WhatsAppAdapter ..( WhatsAppAPI
+DbAdapter ..( SQL
+
+StripeAPI -- StripeSystem
+SendEmail -- EmailSystem
+WhatsAppAPI -- WhatsAppSystem
+SQL -- MySQL
+
+' Stripe also notifies the system when a payment arrives (UC-16)
+StripeSystem ..> WebhookEP : payment event
+
+' ==========================================
+' NOTES
+' ==========================================
+
+note left of Auth
+  Every control component calls
+  Authentication before running its
+  use case (UC-18 is included by all).
+end note
+
+note bottom of StripeAdapter
+  Translates Stripe payments into our
+  Payment objects. Another source
+  (e.g. Revolut) only needs a new adapter.
+end note
+
+note bottom of WhatsAppAdapter
+  Only used if the client has
+  consented to WhatsApp (FR-12).
+end note
+
+note bottom of DbAdapter
+  The only component that runs SQL.
+  The audit log is insert-only (FR-03).
+end note
+
+@enduml

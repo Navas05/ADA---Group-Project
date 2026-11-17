@@ -1,0 +1,190 @@
+@startuml sequence_diagram_uc03_1
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-03: Create or Issue One-Off Invoice
+'  Submission 2 - Issue #22 / #31
+'  Two sequences (like the course example):
+'   Sequence 1 - Create and review the invoice (UC-03 steps 1-6)
+'   Sequence 2 - Issue the invoice (UC-03 steps 7-12)
+'  Classes and methods: class_diagram.pu and
+'  class_diagram_application.pu
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam participant {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+}
+skinparam sequence {
+    ArrowColor #2B3E6A
+    LifeLineBorderColor #2B3E6A
+}
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+}
+autonumber
+
+title UC-03 - Sequence 1: Create and Review the Invoice
+
+actor "Employee (User)" as Employee
+participant "invoiceView : InvoiceView" as View <<boundary>>
+participant "invoiceCtrl : InvoiceController" as Ctrl <<control>>
+participant "authCtrl : AuthController" as Auth <<control>>
+participant "clientRepo : ClientRepository" as CRepo <<interface>>
+participant "client : Client" as Cli <<entity>>
+participant "paramRepo : ParameterRepository" as PRepo <<interface>>
+
+Employee -> View : clicks 'New one-off invoice' for a client
+activate View
+View -> Ctrl : newOneOffInvoice(user, clientId)
+activate Ctrl
+
+Ctrl -> Auth : checkPermission(user, "CREATE_INVOICE", clientId)
+activate Auth
+note right : UC-18 (see sequence_diagram_uc18.pu)
+Auth --> Ctrl : return true
+deactivate Auth
+
+Ctrl -> CRepo : findById(clientId)
+activate CRepo
+CRepo --> Ctrl : return client
+deactivate CRepo
+
+Ctrl -> Cli : hasCompleteBillingData()
+activate Cli
+Cli --> Ctrl : return true
+deactivate Cli
+note right
+  If tax data is missing, the invoice
+  is not created and the missing data
+  is shown (ext. 3a).
+end note
+
+Ctrl -> PRepo : findCurrent("DEFAULT_PAYMENT_TERMS_DAYS")
+activate PRepo
+PRepo --> Ctrl : return paymentTerms
+deactivate PRepo
+
+create participant "invoice : OneOffInvoice" as Inv <<entity>>
+Ctrl -> Inv : <<create>> (client, issueDate = today, dueDate = today + paymentTerms)
+Ctrl --> View : return invoice
+deactivate Ctrl
+View --> Employee : shows the pre-filled invoice
+
+Employee -> View : enters the lines (concept, quantity, unit price)
+View -> Ctrl : reviewInvoice(invoice, lines)
+activate Ctrl
+
+loop for each line
+    Ctrl -> Inv : addLine(concept, quantity, unitPrice)
+end
+
+Ctrl -> Inv : validate()
+activate Inv
+Inv --> Ctrl : return errors
+deactivate Inv
+
+alt errors is empty
+    Ctrl -> Inv : calculateTotals()
+    Ctrl --> View : return no errors
+    View --> Employee : shows the summary (taxable base, VAT, total)
+else invalid data (ext. 5a)
+    Ctrl --> View : return errors
+    View --> Employee : flags the incorrect fields (valid data is kept)
+end
+
+deactivate Ctrl
+deactivate View
+
+@enduml
+
+@startuml sequence_diagram_uc03_2
+' ============================================================
+'  UC-03 - Sequence 2: Issue the invoice (steps 7-12)
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam participant {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+}
+skinparam sequence {
+    ArrowColor #2B3E6A
+    LifeLineBorderColor #2B3E6A
+}
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+}
+autonumber
+
+title UC-03 - Sequence 2: Issue the Invoice
+
+actor "Employee (User)" as Employee
+participant "invoiceView : InvoiceView" as View <<boundary>>
+participant "invoiceCtrl : InvoiceController" as Ctrl <<control>>
+participant "invoiceRepo : InvoiceRepository" as IRepo <<interface>>
+participant "invoice : OneOffInvoice" as Inv <<entity>>
+participant "pdfGenerator : PdfGenerator" as Pdf <<interface>>
+participant "pdfAdapter : CorporatePdfAdapter" as PdfA <<infrastructure>>
+participant "messageCtrl : MessageController" as Msg <<control>>
+participant "auditLog : AuditLogRepository" as Audit <<interface>>
+
+note over Employee, Ctrl
+  If the employee clicks 'Save draft' instead (ext. 7a),
+  saveDraft() stores the invoice without a number and
+  records INVOICE_DRAFT_CREATED in the audit log.
+end note
+
+Employee -> View : clicks 'Issue'
+activate View
+View -> Ctrl : issueInvoice(user, invoice)
+activate Ctrl
+
+Ctrl -> IRepo : nextInvoiceNumber(year)
+activate IRepo
+IRepo --> Ctrl : return number
+deactivate IRepo
+
+Ctrl -> Inv : issue(number)
+Ctrl -> IRepo : save(invoice)
+
+Ctrl -> Pdf : generateInvoicePdf(invoice)
+activate Pdf
+Pdf -> PdfA : generateInvoicePdf(invoice)
+activate PdfA
+note right : fills the approved corporate\ntemplate (UC-14, NFR-03)
+PdfA --> Pdf : return pdfPath
+deactivate PdfA
+Pdf --> Ctrl : return pdfPath
+deactivate Pdf
+
+alt PDF generated
+    Ctrl -> Msg : sendInvoice(invoice)
+    activate Msg
+    note right : UC-15 (see sequence_diagram_uc15.pu)
+    Msg --> Ctrl : return deliveries
+    deactivate Msg
+
+    Ctrl -> Msg : scheduleReminders(invoice)
+    activate Msg
+    note right : creates the Reminder objects\nfrom the reminder schedule (FR-13)
+    Msg --> Ctrl
+    deactivate Msg
+else PDF could not be generated (ext. 9a)
+    Ctrl -> Inv : markAsPendingDelivery()
+    Ctrl -> IRepo : save(invoice)
+    note right : the number is kept and a task is\ncreated in the employee's inbox
+end
+
+Ctrl -> Audit : insert(AuditLogEntry(user, "INVOICE_ISSUED"))
+note right : UC-17
+Ctrl --> View : return deliveries
+deactivate Ctrl
+View --> Employee : shows the issued invoice and its delivery status
+deactivate View
+
+@enduml

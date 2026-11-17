@@ -1,0 +1,100 @@
+@startuml sequence_diagram_uc15
+' ============================================================
+'  TurbineH Invoicing & Subscription System
+'  UML Sequence Diagram - UC-15: Send Invoices & Reminders
+'  Submission 2 - Issue #22 / #32
+'  Scenario: an invoice has just been issued (UC-03 step 9),
+'  so InvoiceController asks MessageController to send it.
+'  A due reminder (SchedulerJob) or a resend (UC-05) follows
+'  the same steps with MessageType = REMINDER.
+'  Classes and methods: class_diagram.pu and
+'  class_diagram_application.pu
+' ============================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam participant {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+}
+skinparam sequence {
+    ArrowColor #2B3E6A
+    LifeLineBorderColor #2B3E6A
+}
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+}
+autonumber
+
+title UC-15 - Send an Invoice through the Consented Channels
+
+participant "invoiceCtrl : InvoiceController" as Caller <<control>>
+participant "messageCtrl : MessageController" as Ctrl <<control>>
+participant "invoice : Invoice" as Inv <<entity>>
+participant "client : Client" as Cli <<entity>>
+participant "sender : MessageSender" as Sender <<interface>>
+participant "adapter : EmailAdapter /\nWhatsAppAdapter" as Adapter <<infrastructure>>
+participant "External Messaging Services" as Ext <<external>>
+participant "messageRepo : MessageRepository" as Repo <<interface>>
+
+Caller -> Ctrl : sendInvoice(invoice)
+activate Ctrl
+
+Ctrl -> Inv : isPaid()
+activate Inv
+Inv --> Ctrl : return false
+deactivate Inv
+note right
+  Step 3. For a reminder, if the invoice
+  is already paid the reminder is
+  cancelled and nothing is sent (ext. 3a).
+end note
+
+Ctrl -> Inv : getClient()
+activate Inv
+Inv --> Ctrl : return client
+deactivate Inv
+
+Ctrl -> Cli : getConsentedChannels()
+activate Cli
+Cli --> Ctrl : return channels
+deactivate Cli
+note right
+  WhatsApp is only in the list if the
+  client has consented to it (ext. 4a).
+end note
+
+alt channels is empty (ext. 4b)
+    Ctrl --> Caller : return "no permitted channel"
+else at least one channel
+    loop for each channel in channels
+        note over Ctrl, Sender : the sender whose getChannel() is this channel
+        Ctrl -> Sender : send(client, invoice, INVOICE)
+        activate Sender
+        Sender -> Adapter : send(client, invoice, INVOICE)
+        activate Adapter
+        note right : builds the message with the\napproved corporate template (NFR-03)
+        Adapter -> Ext : deliver message (SMTP / WhatsApp API)
+        activate Ext
+        Ext --> Adapter : return delivery information
+        deactivate Ext
+        Adapter --> Sender : return status
+        deactivate Adapter
+        Sender --> Ctrl : return status
+        deactivate Sender
+
+        create participant "delivery : MessageDelivery" as Del <<entity>>
+        Ctrl -> Del : <<create>> (invoice, channel, status)
+        note right
+          status = DELIVERED, FAILED (ext. 6a)
+          or PENDING_CONFIRMATION (ext. 7a)
+        end note
+        Ctrl -> Repo : saveDelivery(delivery)
+    end
+    Ctrl --> Caller : return deliveries
+end
+
+deactivate Ctrl
+
+@enduml

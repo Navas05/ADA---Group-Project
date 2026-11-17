@@ -1,0 +1,338 @@
+@startuml class_diagram
+
+hide circle
+skinparam classAttributeIconSize 0
+skinparam shadowing true
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam note {
+    BackgroundColor #FDE2B8
+    BorderColor #2B3E6A
+    FontColor #000000
+}
+
+skinparam arrow {
+    Color #2B3E6A
+}
+
+skinparam linetype ortho
+hide empty members
+
+title TurbineH - UML Class Diagram (Domain Model)
+
+' ---------------- Enumerations ----------------
+
+enum Role {
+  EMPLOYEE
+  ADMINISTRATOR
+  SUPERADMINISTRATOR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLATION_PENDING_SETTLEMENT
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SCHEDULED
+  ISSUED
+  PENDING_DELIVERY
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  MATCHED
+  UNMATCHED
+  AMOUNT_MISMATCH
+}
+
+enum Channel {
+  EMAIL
+  WHATSAPP
+}
+
+enum DeliveryStatus {
+  PENDING_CONFIRMATION
+  DELIVERED
+  FAILED
+}
+
+enum MessageType {
+  INVOICE
+  REMINDER
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+}
+
+enum TaskType {
+  INVOICE_DUE
+  REMINDER_TODAY
+  OVERDUE
+  PAYMENT_CONFIRMED
+  DELIVERY_FAILED
+  RECONCILIATION
+  AMOUNT_MISMATCH
+}
+
+enum TaskStatus {
+  PENDING
+  RESOLVED
+}
+
+enum Outcome {
+  SUCCESS
+  DENIED
+  FAILED
+}
+
+' ---------------- Users and security ----------------
+
+class User {
+  - id : int
+  - email : String
+  - passwordHash : String
+  - fullName : String
+  - role : Role
+  - active : boolean
+  - failedAttempts : int
+  + checkPassword(rawPassword : String) : boolean
+  + hasRole(role : Role) : boolean
+  + canAccessClient(client : Client) : boolean
+  + incrementFailedAttempts() : void
+  + resetFailedAttempts() : void
+  + changeRole(newRole : Role) : void
+}
+
+class Session {
+  - token : String
+  - createdAt : LocalDateTime
+  - expiresAt : LocalDateTime
+  + isExpired() : boolean
+}
+
+' ---------------- Clients ----------------
+
+class Client {
+  - id : int
+  - companyName : String
+  - taxId : String
+  - address : String
+  - city : String
+  - businessArea : String
+  - email : String
+  - phone : String
+  - emailConsent : boolean
+  - whatsappConsent : boolean
+  - active : boolean
+  + hasCompleteBillingData() : boolean
+  + getConsentedChannels() : List<Channel>
+  + getAssignedEmployees() : List<User>
+  + getUnpaidInvoices() : List<Invoice>
+}
+
+class ClientAssignment {
+  - assignedAt : LocalDateTime
+  - unassignedAt : LocalDateTime
+  + isActive() : boolean
+  + close() : void
+}
+
+' ---------------- Subscriptions and invoices ----------------
+
+class Subscription {
+  - id : int
+  - monthlyFee : Double
+  - status : SubscriptionStatus
+  - startDate : LocalDate
+  - nextBillingDate : LocalDate
+  - endDate : LocalDate
+  + modifyTerms(newFee : Double) : void
+  + pause() : void
+  + cancel(hasUnpaidInvoices : boolean) : void
+  + completeCancellation() : void
+  + generateMonthlyInvoice(vatRate : Double, paymentTermsDays : int) : RecurringInvoice
+}
+
+abstract class Invoice {
+  - id : int
+  - number : String
+  - status : InvoiceStatus
+  - issueDate : LocalDate
+  - dueDate : LocalDate
+  - taxableBase : Double
+  - vatRate : Double
+  - vatAmount : Double
+  - totalAmount : Double
+  - pdfPath : String
+  + addLine(concept : String, quantity : Double, unitPrice : Double) : void
+  + calculateTotals() : void
+  + validate() : List<String>
+  + issue(number : String) : void
+  + markAsPendingDelivery() : void
+  + markAsPaid() : void
+  + markAsOverdue() : void
+  + isPaid() : boolean
+  + getClient() : Client
+  + getPendingAmount() : Double
+}
+
+class RecurringInvoice {
+  - billingPeriod : String
+}
+
+class OneOffInvoice {
+  - scheduledIssueDate : LocalDate
+  + saveAsDraft() : void
+  + scheduleIssue(date : LocalDate) : void
+}
+
+class InvoiceLine {
+  - concept : String
+  - quantity : Double
+  - unitPrice : Double
+  + getTotal() : Double
+}
+
+' ---------------- Payments ----------------
+
+class Payment {
+  - id : int
+  - externalReference : String
+  - amount : Double
+  - paymentDate : LocalDateTime
+  - status : PaymentStatus
+  + matches(invoice : Invoice) : boolean
+}
+
+' ---------------- Communications ----------------
+
+class Reminder {
+  - id : int
+  - scheduledAt : LocalDateTime
+  - sendEmail : boolean
+  - sendWhatsapp : boolean
+  - status : ReminderStatus
+  + reschedule(date : LocalDateTime, channels : List<Channel>) : void
+  + cancel() : void
+  + markAsSent() : void
+  + isDue() : boolean
+}
+
+class MessageDelivery {
+  - id : int
+  - messageType : MessageType
+  - channel : Channel
+  - status : DeliveryStatus
+  - sentAt : LocalDateTime
+  - externalMessageId : String
+  - errorMessage : String
+  + updateStatus(newStatus : DeliveryStatus) : void
+}
+
+' ---------------- Inbox, configuration and audit ----------------
+
+class InboxTask {
+  - id : int
+  - type : TaskType
+  - priority : int
+  - status : TaskStatus
+  - createdAt : LocalDateTime
+  - resolvedAt : LocalDateTime
+  + resolve() : void
+  + reassignTo(user : User) : void
+  + isStillValid() : boolean
+}
+
+class SystemParameter {
+  - key : String
+  - value : String
+  - effectiveFrom : LocalDateTime
+  + getIntValue() : int
+}
+
+class AuditLogEntry <<immutable>> {
+  - id : long
+  - timestamp : LocalDateTime
+  - userRole : String
+  - operationType : String
+  - affectedEntity : String
+  - affectedRecordId : int
+  - previousValue : String
+  - newValue : String
+  - outcome : Outcome
+  + AuditLogEntry(user : User, operation : String, entity : String, recordId : int, previous : String, newValue : String, outcome : Outcome)
+  + getOperationType() : String
+  + getTimestamp() : LocalDateTime
+}
+
+' ---------------- Relationships ----------------
+
+' Generalization
+Invoice <|-- RecurringInvoice
+Invoice <|-- OneOffInvoice
+
+' Composition (the part cannot exist without the whole)
+Invoice "1" *-- "1..*" InvoiceLine : -lines
+User "1" *-- "0..*" Session : -sessions
+
+' Associations with multiplicities
+Client "1" --> "0..*" ClientAssignment : -assignments
+User "1" <-- "0..*" ClientAssignment : -user
+
+Client "1" --> "0..1" Subscription : -subscription
+Subscription "1" --> "0..*" RecurringInvoice : -invoices
+Client "1" --> "0..*" Invoice : -invoices
+User "1" <-- "0..*" OneOffInvoice : -createdBy
+
+Invoice "0..1" --> "0..*" Payment : -payments
+
+' Aggregation (reminders and deliveries belong to the invoice history)
+Invoice "1" o-- "0..*" Reminder : -reminders
+Reminder "0..1" --> "0..*" MessageDelivery : -deliveries
+
+User "0..1" --> "0..*" InboxTask : -tasks
+InboxTask "0..*" --> "1" Client : -associatedClient
+InboxTask "0..*" --> "0..1" Invoice : -associatedInvoice
+
+User "1" <-- "0..*" SystemParameter : -updatedBy
+User "0..1" --> "0..*" AuditLogEntry : -logs
+
+' Enumeration usage (kept light to avoid clutter)
+User ..> Role
+Subscription ..> SubscriptionStatus
+Invoice ..> InvoiceStatus
+Payment ..> PaymentStatus
+MessageDelivery ..> Channel
+MessageDelivery ..> DeliveryStatus
+MessageDelivery ..> MessageType
+Reminder ..> ReminderStatus
+InboxTask ..> TaskType
+InboxTask ..> TaskStatus
+AuditLogEntry ..> Outcome
+
+note right of Invoice
+  number is null while status = DRAFT.
+  Once issued, amounts and lines
+  cannot be modified.
+end note
+
+note bottom of AuditLogEntry
+  All attributes are set in the constructor
+  and there are no setters (FR-03, UC-17).
+end note
+
+@enduml
