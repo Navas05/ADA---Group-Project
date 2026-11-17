@@ -60,7 +60,7 @@ The TurbineH Invoicing & Subscription System is a **responsive web application**
 
 1. **It fits the type of system.** The course presents the layered architecture as the recommended pattern for *financial operations that need security, consistency and strict auditing* (Example 1, banking). Our system manages invoices, payments and an uneditable audit log, so it has the same needs.
 2. **Security (NFR-04, FR-02).** Every request enters through the presentation layer and every control calls *Authentication* (UC-18) before doing anything. Only the database adapter accesses the data, so the permission checks cannot be skipped.
-3. **Maintainability.** TurbineH asked for *"code and architecture that another team can continue"* and said that *"there is no need for microservices because they sound modern. If a well-designed modular monolith solves this, perfect."* A layered monolith split into clear components is exactly that.
+3. **Maintainability.** TurbineH asked for code and architecture that another team can continue and said that a well-designed modular monolith could serve well. A layered monolith split into clear components is exactly that.
 4. **It matches our use cases.** Each control component groups the use cases of one functional area, so the use case diagram of Submission 1 maps directly onto the application layer.
 5. **Consistency with the other models.** The packages of the application class diagram (`class_diagram_application.pu`) are these four layers, and the sequence diagrams always follow the path *View → Controller → Entity / Interface → Adapter*.
 
@@ -68,7 +68,7 @@ The TurbineH Invoicing & Subscription System is a **responsive web application**
 
 ### 3.2 Client-server with a responsive web client
 
-TurbineH asked for a *"responsive web application"* that works on *"current Android and iOS browsers"*. A single web client used from the browser of any device covers NFR-02 without developing native apps. The client only presents data; all the rules stay on the server, so they are the same for every device.
+TurbineH asked for a responsive web application that works on Android and iOS. A single web client used from the browser of any device covers NFR-02 without developing native apps. The client only presents data, and all the rules stay on the server, so they are the same for every device.
 
 ### 3.3 Boundary-Control-Entity (BCE)
 
@@ -78,13 +78,13 @@ Inside the layers we used the BCE analysis method from the course: **boundaries*
 
 The external services are not used directly by the domain. The domain defines an interface and an adapter in the infrastructure layer implements it, as the course example does with the legacy scheduling system:
 
-* **Payment Source → Stripe Payment Adapter.** TurbineH said: *"if tomorrow we change Stripe for another provider, it should not force us to rewrite the invoice model"* and *"not everything will be Stripe… Revolut or a bank account"*. Adding a new payment source only means adding a new adapter.
+* **Payment Source → Stripe Payment Adapter.** TurbineH explicitly said that they needed a payment-provider-agnostic system. Also, adding a new payment source only means adding a new adapter.
 * **Message Sending → Email Adapter / WhatsApp Adapter.** Both implement the same interface, so *Message Management* treats all the channels in the same way and only uses the ones the client consented to.
 * **PDF Generation → Corporate PDF Adapter** and **Data Storage → MySQL Database Adapter**, for the same reason: the technology can change without touching the business rules.
 
 ### 3.5 Receiving payment events
 
-TurbineH wants the system to *"query payments and also receive a simulated notification"*. Both are covered: *Payment Tracking* queries Stripe through the `Payment Source` interface (UC-04 step 3), and Stripe sends events to the *Payment Webhook Endpoint* (UC-16).
+TurbineH wants the system to be able to query payments and automatically update them. Both are covered: *Payment Tracking* queries Stripe through the `Payment Source` interface (UC-04 step 3), and Stripe sends events to the *Payment Webhook Endpoint* (UC-16).
 
 ## 4. Constraints
 
@@ -92,12 +92,3 @@ TurbineH wants the system to *"query payments and also receive a simulated notif
 * Only the *MySQL Database Adapter* runs SQL, and the audit log can only be inserted and read (FR-03).
 * No external service is used without its adapter.
 * API keys (for example the Stripe secret) are configuration of the adapters and are not stored in the repository.
-
-## 5. Traceability with other artifacts
-
-| Artifact | Relationship with the architecture |
-| --- | --- |
-| Physical ER diagram | Implemented in the *MySQL Database*, accessed only by the *MySQL Database Adapter*. |
-| Domain class diagram | Entities of the domain layer components. |
-| Application class diagram | One package per layer. Each component corresponds to one or more classes (e.g. *Invoicing* → `InvoiceController`, `SubscriptionController`; *Employee Workspace UI* → `InboxView`, `InvoiceView`, `SubscriptionView`, `PaymentTrackingView`, `MessageView`). |
-| Sequence diagrams (UC-03, UC-15, UC-18) | Show the interaction between the boundaries, controls, entities, interfaces and adapters for those use cases. |

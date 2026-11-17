@@ -1,13 +1,4 @@
 @startuml component_diagram
-' ============================================================
-'  TurbineH Invoicing & Subscription System
-'  UML Component Diagram - Layered architecture
-'  Submission 2 - Issue #21 / #29
-'  Same structure as the course example (Medical Appointment):
-'  Presentation (boundary) -> Application (control) ->
-'  Domain (entities + contracts) <- Infrastructure (adapters)
-'  Rationale of the pattern: architecture.md
-' ============================================================
 
 skinparam componentStyle uml2
 skinparam shadowing false
@@ -34,6 +25,8 @@ skinparam interface {
 skinparam arrow {
     Color #2B3E6A
 }
+
+skinparam ranksep 300
 
 title TurbineH - UML Component Diagram (Layered Architecture)
 
@@ -237,24 +230,24 @@ StripeSystem ..> WebhookEP : payment event
 ' NOTES
 ' ==========================================
 
-note right of Auth
+note left of Auth
   Every control component calls
   Authentication before running its
   use case (UC-18 is included by all).
 end note
 
-note right of StripeAdapter
+note bottom of StripeAdapter
   Translates Stripe payments into our
   Payment objects. Another source
   (e.g. Revolut) only needs a new adapter.
 end note
 
-note right of WhatsAppAdapter
+note bottom of WhatsAppAdapter
   Only used if the client has
   consented to WhatsApp (FR-12).
 end note
 
-note right of DbAdapter
+note bottom of DbAdapter
   The only component that runs SQL.
   The audit log is insert-only (FR-03).
 end note
